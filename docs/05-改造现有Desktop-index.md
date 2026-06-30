@@ -90,6 +90,61 @@ Start with PHASE 0 (the investigation report) only.
 
 ---
 
+## PHASE 0 排查结果（AI 已返回）
+
+- ✅ bridge wiring 简单、不需改动。
+- ✅ 要保留的现有功能很多:sessions、new chat/refresh、folder/permissions、
+  Feature Connections（BBG / Outlook / Board collections）、Outlook drawer、
+  Studio feature API drawer、HTML board preview、rollback changes。
+- ✅ **真实 diff 数据存在于后端 `ChangeSession.diffs`,但前端目前拿不到。**
+- ❌ **没有 commit 的 bridge 方法。**
+- 主题:现有 `data-theme="dark-blue"`,有蓝/绿 radial 渐变和 green/red 变量。
+
+### 架构差异（关键）
+你们的 AI **已经把改动写进文件**（所以有 Roll back changes）。所以:
+- **Decline** = 回滚该文件　**Accept** = 保留　**Commit** = git 提交接受的文件
+- 绿红 diff 只是可视化"已改了什么",Accept/Decline/Commit 作用于**已应用的改动**。
+
+---
+
+## 两阶段决策（确认后发给 AI 的回复）
+
+> PHASE 1 纯前端、零风险,先做;PHASE 2 要加后端两个方法,后做。
+
+```text
+Confirmed. Proceed, but in this order and scope:
+
+PHASE 1 — Frontend visual redesign only (no backend dependency, do first):
+- Apply the HSBC look: HSBC red (#db0011 light / #ed3b45 dark) as the SINGLE accent,
+  red hexagon brand mark, remove blue/green gradients, neutral greys elsewhere.
+- Keep data-theme="dark-blue" and data-theme="light" mechanisms intact.
+- Clean/airy/lightweight: 1px borders + whitespace over shadows, 8px spacing,
+  subtle 120-260ms animations. Improve existing diff rendering where detail_html exists.
+- Do NOT touch the bridge wiring or any existing feature. Keep rollback as-is.
+Report what changed and verify the app still launches.
+
+PHASE 2 — Real green/red diff + Accept/Decline/Commit (needs backend; do after Phase 1):
+First report the exact shape of ChangeSession.diffs and the current rollback method
+signature. Then propose these additions for my approval BEFORE writing them:
+  - bridge.getChangeSessionDiffs(session_id) -> the diffs (old/new or unified per file),
+    so the frontend can render line-by-line green(+)/red(-) diffs.
+  - bridge.commitChanges(session_id, paths[]) -> git-commit the selected accepted files.
+  - per-file rollback (if rollback is currently all-or-nothing), so "Decline" can revert one file.
+UI model: each changed file = a card with its green/red line diff, an Accept and a Decline
+button (Decline = rollback that file), a selection checkbox, and a Commit button for the
+selected accepted files. Add inline / side-by-side toggle. Build against the real bridge
+data once the methods exist — do not fake data.
+
+Keep everything incremental: one step, keep app running, report changes after each.
+```
+
+### 为什么分两阶段
+- PHASE 1 不依赖后端,外观马上变好看,零风险。
+- PHASE 2 需加 `getChangeSessionDiffs` + `commitChanges` 两个 bridge 方法;
+  让 AI **先报告 `ChangeSession.diffs` 结构再动手**,结构对了前端绿红 diff 才渲染得对。
+
+---
+
 ## 你可能要回答 AI 的问题
 
 它做完 PHASE 0 排查后,可能会问你:
