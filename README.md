@@ -16,6 +16,7 @@
 | 文件 | 阶段 |
 |------|------|
 | [docs/01-PRD.md](docs/01-PRD.md) | 1. 产品需求文档（PRD） |
+| [docs/design-system.md](docs/design-system.md) | 设计系统：颜色 + 字体 + 间距规范（Claude/Codex 风格，先定后用）|
 
 > v3 建议把设计流程拆成 6 个阶段分别生成：**PRD → UX 规范 → UI 设计 → 前端架构 → Design System → 交互规范**。当前已完成第 1 阶段，后续阶段会陆续补充到 `docs/`。
 

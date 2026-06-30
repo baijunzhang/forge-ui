@@ -28,8 +28,16 @@ Tech constraints:
 - 8px spacing grid, consistent typography, soft rounded corners.
 - No heavy animations. Subtle only.
 
+Design tokens (colors + typography) are defined in docs/design-system.md.
+- Use ONLY those tokens (CSS variables / Tailwind semantic classes like
+  bg-surface, text-secondary, accent). Never hardcode hex or font sizes.
+- No pure black or pure white. No font-weight above 600.
+- Stick to the 8px spacing grid and the defined radius/shadow tokens.
+
 Reply "Ready" and wait. I will give you ONE step at a time.
 ```
+
+> 注：STEP 1 之前先让 AI 把 `docs/design-system.md` 里的令牌写进全局 CSS / `tailwind.config`，作为 STEP 0。
 
 ---
 
