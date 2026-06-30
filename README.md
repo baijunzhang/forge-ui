@@ -8,7 +8,8 @@
 |------|------|----------|
 | [AI-Coding-Assistant-Prompt.md](AI-Coding-Assistant-Prompt.md) | **v1 · 精简版** | 聚焦代码编辑 + diff 审批（Accept/Reject、提交）。需求清晰、想快速出原型时用。 |
 | [AI-IDE-Workspace-Prompt.md](AI-IDE-Workspace-Prompt.md) | **v2 · 全功能工作台** | 让 AI 扮演 OpenAI/Anthropic 设计师，做 production-ready 全功能 AI 工作台（15 大模块）。 |
-| [AI-IDE-Workspace-Prompt-v3.md](AI-IDE-Workspace-Prompt-v3.md) | **v3 · 逆向拆解版（推荐）** | 先逆向拆解 ChatGPT/Claude/Cursor 等再融合，30 项 deliverables，质量最高。 |
+| [AI-IDE-Workspace-Prompt-v3.md](AI-IDE-Workspace-Prompt-v3.md) | **v3 · 逆向拆解版** | 先逆向拆解 ChatGPT/Claude/Cursor 等再融合，30 项 deliverables。⚠️ 一次性输出过重，实测易出现页面不美观、bug 多。 |
+| [AI-IDE-Stepwise-Prompt.md](AI-IDE-Stepwise-Prompt.md) | **v4 · 分步施工版（推荐落地）** | 精简高效。把构建拆成 10 个小 step，AI 一次只改一块、能跑再继续，bug 少、质量高。 |
 
 ## 产品文档（落地）
 
