@@ -214,6 +214,38 @@ didn't go through the formal plan-mode flow. Please:
 
 ---
 
+## 死结:守卫要 plan mode,但 session 没有 plan-mode 工具
+
+AI 反馈:它**被矛盾卡死**——守卫要求走 `EnterPlanMode` / `ExitPlanMode`,
+但当前 session **没有暴露这两个工具**,它只有 `Read / Write / Edit / Bash`。
+等也等不来。另外它提到:在收到"走正式流程"指令前,**已经通过 shell/file 改了一部分**
+`frontend/index.html`(可能已有部分 CSS 改动)。
+
+Configure 面板里也**没有**关闭该守卫的开关(只有 FOLDER、PERMISSIONS=accept-all、
+FEATURE CONNECTIONS)。说明守卫是写死在 app 里的,界面关不掉。
+
+### 解法:授权跳过正式 plan mode（Option 2,发这段）
+```text
+Option 2: proceed WITHOUT formal plan-mode. The EnterPlanMode/ExitPlanMode tools
+aren't available in this session, so that guard can't be satisfied anyway, and
+there is no toggle for it in Configure.
+
+Steps:
+1. First run `git diff --stat` and show me which Phase 1 edits you already made.
+2. Then continue Phase 1 with normal Edit/Bash tools, ONE step at a time, and
+   report exactly what changed after each edit.
+
+Constraints unchanged: CSS-only + red hexagon brand-mark, no bridge changes, keep all
+IDs/classes/event listeners/bridge calls/payload shapes, keep data-theme mechanisms,
+keep semantic green/red. Do not start Phase 2.
+```
+
+### 如果连 Option 2 都被 "[Planning required]" 拦
+说明守卫是硬性的、accept-all 也压不住。改用绕过方案:
+- 让 AI 把改好的**完整 index.html 内容输出到对话里**,你手动保存覆盖文件,绕开它的 Edit 守卫。
+
+---
+
 ## 你可能要回答 AI 的问题
 
 它做完 PHASE 0 排查后,可能会问你:
