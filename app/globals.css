@@ -1,0 +1,185 @@
+/* ============================================================
+   Forge AI IDE — Global Styles & Design Tokens
+   配色 + 字体 + 间距 + 轻盈感动效，全部集中在此。
+   组件里只引用变量 / 语义类，不要硬编码。
+   ============================================================ */
+
+/* -------- 深色主题（默认）-------- */
+:root,
+:root[data-theme="dark"] {
+  /* 背景层次：越上层越亮一点点（暖黑，不用纯黑）*/
+  --bg-base:        #1a1a18;
+  --bg-surface:     #212121;
+  --bg-elevated:    #2a2a28;
+  --bg-hover:       #323230;
+  --bg-active:      #3a3a37;
+
+  /* 边框：极淡，靠明度区分而非粗线 */
+  --border-subtle:  #2e2e2c;
+  --border-default: #3a3a37;
+  --border-strong:  #4a4a46;
+
+  /* 文字：三级明度 */
+  --text-primary:   #ececec;
+  --text-secondary: #b4b4b0;
+  --text-muted:     #8a8a86;
+
+  /* 强调色：克制暖橙 */
+  --accent:         #d97757;
+  --accent-hover:   #e08968;
+  --accent-subtle:  rgba(217,119,87,0.12);
+  --focus-ring:     rgba(217,119,87,0.45);
+
+  /* 语义色（低饱和，diff 友好）*/
+  --success:        #6cae75;
+  --warning:        #d6a85c;
+  --danger:         #cf6b66;
+
+  /* Diff 专用 */
+  --diff-add-bg:    rgba(108,174,117,0.14);
+  --diff-add-text:  #8fce97;
+  --diff-del-bg:    rgba(207,107,102,0.14);
+  --diff-del-text:  #e0908b;
+  --diff-gutter:    #6cae75;
+}
+
+/* -------- 浅色主题 -------- */
+:root[data-theme="light"] {
+  --bg-base:        #f7f6f3;
+  --bg-surface:     #ffffff;
+  --bg-elevated:    #ffffff;
+  --bg-hover:       #f0efea;
+  --bg-active:      #e8e6df;
+
+  --border-subtle:  #ecebe6;
+  --border-default: #e0ded7;
+  --border-strong:  #cbc9c0;
+
+  --text-primary:   #2a2a28;
+  --text-secondary: #5a5a55;
+  --text-muted:     #8a8a83;
+
+  --accent:         #c45c3c;
+  --accent-hover:   #b04e30;
+  --accent-subtle:  rgba(196,92,60,0.10);
+  --focus-ring:     rgba(196,92,60,0.40);
+
+  --success:        #4f9d5f;
+  --warning:        #c08a3e;
+  --danger:         #c0504b;
+
+  --diff-add-bg:    rgba(79,157,95,0.12);
+  --diff-add-text:  #2e7d40;
+  --diff-del-bg:    rgba(192,80,75,0.12);
+  --diff-del-text:  #b03a35;
+  --diff-gutter:    #4f9d5f;
+}
+
+/* -------- 字体 -------- */
+:root {
+  --font-sans: ui-sans-serif, -apple-system, "Segoe UI", Roboto,
+               "Helvetica Neue", Arial, "PingFang SC",
+               "Microsoft YaHei", sans-serif;
+  --font-mono: "SF Mono", ui-monospace, "JetBrains Mono",
+               "Fira Code", Menlo, Consolas, monospace;
+
+  /* 字号阶梯 */
+  --text-xs: 12px;   --lh-xs: 16px;
+  --text-sm: 13px;   --lh-sm: 20px;
+  --text-base: 14px; --lh-base: 22px;
+  --text-md: 15px;   --lh-md: 24px;
+  --text-lg: 18px;   --lh-lg: 26px;
+  --text-xl: 22px;   --lh-xl: 30px;
+
+  --fw-normal: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+
+  --code-size: 13px;
+  --code-lh: 21px;
+}
+
+/* -------- 间距 / 圆角 / 阴影（轻盈：阴影极淡，圆角温和）-------- */
+:root {
+  --space-1: 4px;   --space-2: 8px;   --space-3: 12px;
+  --space-4: 16px;  --space-5: 24px;  --space-6: 32px;  --space-8: 48px;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-full: 9999px;
+
+  /* 轻盈：用极淡阴影，多数面板用边框而非阴影分层 */
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.14);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.18);
+  --shadow-lg: 0 12px 32px rgba(0,0,0,0.24);
+
+  /* 轻盈动效：统一缓动与时长，快而不飘 */
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  --dur-fast: 120ms;
+  --dur-base: 180ms;
+  --dur-slow: 260ms;
+}
+
+/* -------- Base reset -------- */
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: var(--lh-base);
+  font-weight: var(--fw-normal);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+code, pre, .mono {
+  font-family: var(--font-mono);
+  font-size: var(--code-size);
+  line-height: var(--code-lh);
+}
+
+/* 焦点环：统一、克制 */
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 1px;
+}
+
+/* 细滚动条（轻盈）*/
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: var(--radius-full);
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+::-webkit-scrollbar-track { background: transparent; }
+
+/* -------- 轻盈动效工具类 -------- */
+/* 展开/折叠（如 toolbar、tool-call 卡片、面板）统一用这个 */
+.collapsible {
+  overflow: hidden;
+  transition: height var(--dur-base) var(--ease),
+              opacity var(--dur-fast) var(--ease);
+}
+.fade-in   { animation: fadeIn var(--dur-base) var(--ease); }
+.slide-down{ animation: slideDown var(--dur-base) var(--ease); }
+
+@keyframes fadeIn   { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideDown{
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* 尊重用户的"减少动效"设置 */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

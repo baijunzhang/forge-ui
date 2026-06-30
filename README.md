@@ -16,7 +16,9 @@
 | 文件 | 阶段 |
 |------|------|
 | [docs/01-PRD.md](docs/01-PRD.md) | 1. 产品需求文档（PRD） |
-| [docs/design-system.md](docs/design-system.md) | 设计系统：颜色 + 字体 + 间距规范（Claude/Codex 风格，先定后用）|
+| [docs/design-system.md](docs/design-system.md) | 设计系统：颜色 + 字体 + 间距 + 轻盈感规范（Claude/Codex 风格）|
+| [app/globals.css](app/globals.css) | 现成全局样式：所有设计令牌 + 轻盈动效工具类（直接引入）|
+| [tailwind.config.ts](tailwind.config.ts) | 现成 Tailwind 配置：令牌映射成语义类名（bg-surface / accent ...）|
 
 > v3 建议把设计流程拆成 6 个阶段分别生成：**PRD → UX 规范 → UI 设计 → 前端架构 → Design System → 交互规范**。当前已完成第 1 阶段，后续阶段会陆续补充到 `docs/`。
 

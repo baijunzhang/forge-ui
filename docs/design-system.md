@@ -232,6 +232,37 @@ Use ONLY the design tokens defined in docs/design-system.md.
 
 ---
 
+## 6.5 轻盈感原则（Lightweight Feel）
+
+> 目标：界面看起来通透、不厚重。Claude/Linear 那种"轻"，不是少功能，而是视觉重量控制得好。
+
+**核心：能用边框和留白分层，就不用阴影和填充。**
+
+| 做 ✅ | 不做 ❌ |
+|-------|---------|
+| 面板之间用 1px `border-subtle` 分隔 | 给每个面板加重投影、厚边框 |
+| 工具栏/卡片背景用 `bg-surface`（与底色差一点点） | 大块高对比纯色填充 |
+| 展开 toolbar / 面板用**高度+淡入动画**滑出 | 突然撑开、生硬跳变 |
+| 图标按钮：透明底，仅 hover 时显 `bg-hover` | 每个按钮都有边框+背景 |
+| 次要信息用 `text-muted`，弱化存在感 | 所有文字一样重 |
+| 分隔靠间距（`space-4/5`），少用分割线 | 到处画横线竖线 |
+| 阴影只给真正悬浮的元素（菜单/模态/toast） | 静态卡片也加阴影 |
+
+**展开/收起类交互（toolbar、tool-call 卡片、侧栏、面板）统一规则：**
+- 用高度过渡 + 淡入：`transition: height 180ms, opacity 120ms`（已封装为 `.collapsible` / `animation: slide-down`）。
+- 收起时元素从布局流移除，不留空占位。
+- 折叠按钮用极简的 chevron 图标（▸ / ▾），不用大按钮。
+- 默认**收起**次要面板（如右侧 Inspector、底部终端），需要时才展开 —— 默认轻、按需重。
+
+**动效原则（轻而不飘）：**
+- 时长短：120–260ms，绝不超过 300ms。
+- 缓动统一：`cubic-bezier(0.2,0,0,1)`（快出慢入，干脆）。
+- 只动 `opacity` 和 `transform`（性能好、不卡）。
+- 不用弹跳、不用大位移、不用持续循环动画（除 loading）。
+- 尊重 `prefers-reduced-motion`（已在 globals.css 处理）。
+
+---
+
 ## 速查：为什么这套耐看
 
 | 决策 | 原因 |

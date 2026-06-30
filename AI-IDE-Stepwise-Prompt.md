@@ -37,7 +37,19 @@ Design tokens (colors + typography) are defined in docs/design-system.md.
 Reply "Ready" and wait. I will give you ONE step at a time.
 ```
 
-> 注：STEP 1 之前先让 AI 把 `docs/design-system.md` 里的令牌写进全局 CSS / `tailwind.config`，作为 STEP 0。
+> 注：令牌已落地为现成文件 `app/globals.css` + `tailwind.config.ts`，直接引入即可（STEP 0 已备好）。
+
+补充给 AI 的轻盈感规则（加进总纲）：
+```text
+Keep the UI LIGHTWEIGHT, not heavy:
+- Separate panels with 1px subtle borders + whitespace, not shadows/thick fills.
+- Icon buttons are transparent; show bg-hover only on hover.
+- Expand/collapse (toolbar, tool-call cards, panels) uses a height + fade
+  animation (use .collapsible / animation: slide-down). No abrupt jumps.
+- Collapse secondary panels (right inspector, bottom terminal) BY DEFAULT.
+- Animations: 120–260ms only, ease cubic-bezier(0.2,0,0,1), animate only
+  opacity/transform. No bounce, no large motion, no looping (except loaders).
+```
 
 ---
 
