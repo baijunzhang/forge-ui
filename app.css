@@ -37,7 +37,42 @@
   width: 10px; height: 10px; border-radius: 3px;
   background: var(--accent);
 }
+.forge-ide .topbar-left { display: flex; align-items: center; gap: var(--space-3); }
+.forge-ide .project-name {
+  font-size: var(--text-sm); color: var(--text-muted);
+  padding-left: var(--space-3); border-left: 1px solid var(--border-subtle);
+}
 .forge-ide .topbar-right { display: flex; align-items: center; gap: var(--space-3); }
+
+/* -------- 多会话标签 -------- */
+.forge-ide .tabs {
+  display: flex; align-items: center; gap: 2px; height: 36px; flex: 0 0 36px;
+  padding: 0 var(--space-2); border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-base); overflow-x: auto;
+}
+.forge-ide .tab {
+  display: flex; align-items: center; gap: var(--space-2);
+  height: 28px; padding: 0 var(--space-2) 0 var(--space-3);
+  border: 1px solid transparent; border-radius: var(--radius-sm);
+  background: transparent; color: var(--text-muted); cursor: pointer;
+  font-size: var(--text-sm); white-space: nowrap;
+  transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+.forge-ide .tab:hover { background: var(--bg-hover); color: var(--text-secondary); }
+.forge-ide .tab.active { background: var(--bg-surface); color: var(--text-primary); border-color: var(--border-subtle); }
+.forge-ide .tab-close {
+  font-size: 11px; opacity: 0; width: 14px; height: 14px; border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+  transition: opacity var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease);
+}
+.forge-ide .tab:hover .tab-close, .forge-ide .tab.active .tab-close { opacity: 0.6; }
+.forge-ide .tab-close:hover { opacity: 1; background: var(--bg-active); }
+.forge-ide .tab-new {
+  width: 26px; height: 26px; border: none; background: transparent; cursor: pointer;
+  color: var(--text-muted); border-radius: var(--radius-sm); font-size: 16px;
+  transition: background var(--dur-fast) var(--ease);
+}
+.forge-ide .tab-new:hover { background: var(--bg-hover); color: var(--text-secondary); }
 
 .forge-ide .auto-toggle {
   display: flex; align-items: center; gap: var(--space-2);
@@ -83,6 +118,21 @@
   color: var(--text-muted);
 }
 .forge-ide .filetree { flex: 1; overflow-y: auto; padding: var(--space-1) var(--space-2); }
+
+/* 文件树空状态：连接本地文件夹 */
+.forge-ide .tree-empty {
+  display: flex; flex-direction: column; align-items: center; gap: var(--space-3);
+  padding: var(--space-6) var(--space-4); text-align: center; color: var(--text-muted);
+}
+.forge-ide .tree-empty p { margin: 0; font-size: var(--text-sm); line-height: var(--lh-sm); }
+.forge-ide .connect-btn {
+  display: inline-flex; align-items: center; gap: var(--space-2);
+  height: 32px; padding: 0 var(--space-4); border-radius: var(--radius-sm);
+  border: 1px solid var(--accent); background: var(--accent-subtle); color: var(--accent);
+  font-size: var(--text-sm); cursor: pointer; transition: background var(--dur-fast) var(--ease);
+}
+.forge-ide .connect-btn:hover { background: rgba(217,119,87,0.18); }
+.forge-ide .tree-hint { font-size: var(--text-xs); color: var(--text-muted); }
 .forge-ide .tree-row {
   display: flex; align-items: center; gap: var(--space-2);
   height: 28px; padding: 0 var(--space-2); border-radius: var(--radius-sm);
@@ -171,7 +221,26 @@
 .forge-ide .diff-path { font-family: var(--font-mono); color: var(--text-primary); }
 .forge-ide .diff-add-n { font-family: var(--font-mono); color: var(--diff-add-text); margin-left: var(--space-2); }
 .forge-ide .diff-del-n { font-family: var(--font-mono); color: var(--diff-del-text); }
-.forge-ide .diff-actions { margin-left: auto; display: flex; gap: var(--space-2); }
+.forge-ide .diff-actions { margin-left: auto; display: flex; gap: var(--space-2); align-items: center; }
+.forge-ide .diff-mode {
+  display: inline-flex; border: 1px solid var(--border-default); border-radius: var(--radius-sm);
+  overflow: hidden; margin-right: var(--space-2);
+}
+.forge-ide .diff-mode button {
+  border: none; background: transparent; color: var(--text-muted); cursor: pointer;
+  font-size: var(--text-xs); padding: 4px 8px; transition: background var(--dur-fast) var(--ease);
+}
+.forge-ide .diff-mode button.on { background: var(--bg-active); color: var(--text-primary); }
+
+/* 并排（split）模式 */
+.forge-ide .diff-split { display: flex; }
+.forge-ide .diff-split .col { flex: 1; min-width: 0; overflow-x: auto; }
+.forge-ide .diff-split .col + .col { border-left: 1px solid var(--border-subtle); }
+.forge-ide .diff-split .col-head {
+  font-size: var(--text-xs); color: var(--text-muted); padding: 4px var(--space-3);
+  border-bottom: 1px solid var(--border-subtle); position: sticky; top: 0; background: var(--bg-surface);
+}
+.forge-ide .diff-line.empty { background: var(--bg-base); opacity: 0.4; }
 .forge-ide .btn {
   display: inline-flex; align-items: center; gap: 4px;
   height: 26px; padding: 0 var(--space-3); border-radius: var(--radius-sm);
