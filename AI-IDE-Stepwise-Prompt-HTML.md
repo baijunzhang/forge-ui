@@ -151,6 +151,91 @@ STEP 10: Polish pass only. No new features.
 
 ---
 
+## 补充步骤（我们讨论过、但基础十步没覆盖的功能）
+
+> 这些是把原型升级成"汇丰版 Claude Code"真正需要的。做完 STEP 1–10 后,按需追加。
+> 顺序建议:STEP 0 最先(在 STEP 1 之前),其余按编号往后接。
+
+### STEP 0 — 设计令牌（在 STEP 1 之前做）
+```text
+STEP 0: Set up the design tokens before building any UI.
+- styles.css already contains all color/font/spacing tokens. Do NOT modify it.
+- Confirm index.html links styles.css and app.css. From now on, every component
+  uses var(--...) variables only — never hardcode colors or font sizes.
+```
+
+### STEP 11 — HSBC 品牌化（双色 + 六边形）
+```text
+STEP 11: Apply HSBC branding to the UI.
+- Accent color = HSBC red. Dark mode: #ed3b45 (brightened for readability),
+  light mode: #db0011 (true brand red). Add --brand-red: #db0011.
+- The logo mark is a red hexagon (clip-path polygon), not a square dot.
+- Keep the scheme TWO-TONE: HSBC red as the only accent, everything else
+  neutral warm grey. Restraint = premium. Do not add other colors.
+- Keep the diff "accept" button green (success) so it stays distinct from
+  brand red — never make accept red.
+```
+
+### STEP 12 — 双主题（深色 / 浅色切换）
+```text
+STEP 12: Add a light/dark theme toggle.
+- A sun/moon icon button in the top bar toggles documentElement
+  data-theme between "dark" and "light".
+- Both palettes already exist in styles.css; just switch the attribute.
+- Verify contrast and the HSBC red look correct in BOTH modes.
+```
+
+### STEP 13 — 连接本地文件夹（核心：直接读写本地）
+```text
+STEP 13: Connect to a local folder and read/write real files.
+- Use the browser File System Access API: window.showDirectoryPicker().
+- Recursively read the directory into the file tree (skip . and node_modules).
+- Opening a file reads its text; accepting a diff writes back via createWritable().
+- Isolate this in 3 functions: openLocalFolder() / readFile() / writeFile(),
+  so the local backend can later be swapped (e.g. Electron fs) WITHOUT touching the UI.
+- If the API is unavailable, fall back to mock data with a clear empty state.
+```
+
+### STEP 14 — 并排 diff（inline / split 切换）
+```text
+STEP 14: Add a side-by-side (split) view to the diff viewer.
+- A small "inline / split" toggle on the diff header.
+- Split = two columns ("before" left with deletions, "after" right with additions),
+  context lines aligned on both sides, empty placeholder rows where one side has none.
+- Reuse the same diff color tokens. Inline stays the default.
+```
+
+### STEP 15 — 多会话标签
+```text
+STEP 15: Add browser-style conversation tabs.
+- A tab bar under the top bar: each tab = one conversation, with a close (✕) button.
+- A "+" button opens a new conversation. Clicking a tab switches active state.
+- Closing the active tab activates the first remaining tab.
+```
+
+### STEP 16 — 文件查看器（点文件看内容）
+```text
+STEP 16: Open a file's content in the center when clicked in the tree.
+- Clicking a file shows its content with line numbers and monospace font
+  (read via readFile() when connected to a local folder).
+- A simple tab/header shows which file is open. This complements the diff view.
+```
+
+### STEP 17 — 打磨与一致性（汇丰品质）
+```text
+STEP 17: Final polish for a premium, comfortable, lightweight feel.
+- Consistent 8px spacing everywhere; align all panels and headers.
+- Empty states (no folder connected, no messages), loading states, hover states.
+- Keep it AIRY: 1px borders + whitespace over shadows; secondary panels collapsed
+  by default; subtle 120-260ms animations only.
+- Verify both themes, keyboard focus rings, and that nothing leaks outside .forge-ide.
+```
+
+> 说明:STEP 11–17 已经在仓库的 index.html / app.css / app.js 里实现好了,可直接参考成品代码,
+> 这些 prompt 主要供你重做或让 AI 在别处复刻时使用。
+
+---
+
 ## 实操节奏
 
 ```

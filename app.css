@@ -33,9 +33,11 @@
   font-size: var(--text-md);
   letter-spacing: -0.01em;
 }
+/* HSBC 风格六边形标记 */
 .forge-ide .logo-dot {
-  width: 10px; height: 10px; border-radius: 3px;
-  background: var(--accent);
+  width: 16px; height: 16px;
+  background: var(--brand-red);
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
 }
 .forge-ide .topbar-left { display: flex; align-items: center; gap: var(--space-3); }
 .forge-ide .project-name {

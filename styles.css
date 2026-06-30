@@ -24,11 +24,12 @@
   --text-secondary: #b4b4b0;
   --text-muted:     #8a8a86;
 
-  /* 强调色：克制暖橙 */
-  --accent:         #d97757;
-  --accent-hover:   #e08968;
-  --accent-subtle:  rgba(217,119,87,0.12);
-  --focus-ring:     rgba(217,119,87,0.45);
+  /* 强调色：HSBC 红（深色下略提亮以保证可读）*/
+  --accent:         #ed3b45;
+  --accent-hover:   #f4555e;
+  --accent-subtle:  rgba(219,0,17,0.16);
+  --focus-ring:     rgba(237,59,69,0.45);
+  --brand-red:      #db0011;
 
   /* 语义色（低饱和，diff 友好）*/
   --success:        #6cae75;
@@ -59,10 +60,11 @@
   --text-secondary: #5a5a55;
   --text-muted:     #8a8a83;
 
-  --accent:         #c45c3c;
-  --accent-hover:   #b04e30;
-  --accent-subtle:  rgba(196,92,60,0.10);
-  --focus-ring:     rgba(196,92,60,0.40);
+  --accent:         #db0011;
+  --accent-hover:   #b8000e;
+  --accent-subtle:  rgba(219,0,17,0.08);
+  --focus-ring:     rgba(219,0,17,0.40);
+  --brand-red:      #db0011;
 
   --success:        #4f9d5f;
   --warning:        #c08a3e;
