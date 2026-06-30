@@ -145,6 +145,49 @@ Keep everything incremental: one step, keep app running, report changes after ea
 
 ---
 
+## PHASE 1 计划（AI 已出 + 已批准）
+
+> AI 触发了 repo 的 plan-mode 保护（复杂改动需先出计划再执行），返回了一份 Phase 1 计划。
+> 评估：完全符合"纯前端、不碰 bridge"的要求,**已批准**。
+
+AI 的 Phase 1 计划（全部 CSS-only，加红六边形 brand-mark 的标记/CSS）:
+- Step 1 — 主题令牌:HSBC 红(dark `#ed3b45` / light `#db0011`)、去蓝绿渐变、中性灰、
+  保留 `data-theme="dark-blue"` 与 `"light"` 机制、diff 状态保留绿/红。
+- Step 2 — 品牌+外壳:`.brand-mark` 改 HSBC 红六边形、减重阴影、1px 边框,**DOM/ID 不动**。
+- Step 3 — 卡片/按钮/抽屉打磨,**保留所有 JS 用的 ID/class、事件监听、bridge 调用**。
+- Step 4 — 现有 diff 渲染打磨(`.diff-line.add/.del/.hunk/.file`、`.diff-stat` 等),
+  纯 CSS,不造假数据,Phase 1 不做 commit/accept/decline。
+- Step 5 — 验证启动 + QWebChannel 接线仍在
+  (`qrc:///qtwebchannel/qwebchannel.js`、`window.qt.webChannelTransport`、
+  `channel.objects.bridge`、`bridge.getInitialState`、`window.desktopInit`)。
+- 风险:低到中,纯 CSS + brand-mark 调整,不碰 bridge/事件/payload/后端。
+
+> 重要发现:前端已存在 `.diff-line.add/.del/.hunk/.file` 一套 diff 行渲染——
+> Phase 1 只是把它配色打磨好;Phase 2 再把 `ChangeSession.diffs` 接进来做完整逐行 diff。
+
+### 批准回复（已发给 AI）
+```text
+Approved. Proceed with Phase 1 (Steps 1–5) exactly as planned: CSS-only plus the
+brand-mark markup/CSS change for the red hexagon.
+
+Reminders while editing:
+- Do NOT change any IDs/classes used by JS, event listeners, bridge calls, or payload shapes.
+- Keep data-theme="dark-blue" and data-theme="light" mechanisms intact.
+- Keep semantic green/red for diff status.
+- Work incrementally; after each step, report exactly what changed.
+- After Step 5, confirm the app launches and the QWebChannel wiring is intact.
+
+Do not start Phase 2 yet — after Phase 1 I will review the look, then we plan the
+ChangeSession.diffs + commit work together.
+```
+
+### 下一步
+1. AI 执行 Phase 1 → 看外观（应变 HSBC 红 + 清新轻盈,蓝绿渐变消失）。
+2. 确认无误后,进入 PHASE 2:加 `getChangeSessionDiffs(session_id)` + `commitChanges` +
+   按文件 rollback（Decline），并把前端绿红 diff 接到真实 `ChangeSession.diffs`。
+
+---
+
 ## 你可能要回答 AI 的问题
 
 它做完 PHASE 0 排查后,可能会问你:
