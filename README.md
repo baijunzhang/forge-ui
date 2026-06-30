@@ -16,6 +16,7 @@
 | 文件 | 阶段 |
 |------|------|
 | [docs/01-PRD.md](docs/01-PRD.md) | 1. 产品需求文档（PRD） |
+| [docs/02-如何实施.md](docs/02-如何实施.md) | 实施指南：建项目、放令牌、发开场白、分步施工（照着做即可）|
 | [docs/design-system.md](docs/design-system.md) | 设计系统：颜色 + 字体 + 间距 + 轻盈感规范（Claude/Codex 风格）|
 | [app/globals.css](app/globals.css) | 现成全局样式：所有设计令牌 + 轻盈动效工具类（直接引入）|
 | [tailwind.config.ts](tailwind.config.ts) | 现成 Tailwind 配置：令牌映射成语义类名（bg-surface / accent ...）|
