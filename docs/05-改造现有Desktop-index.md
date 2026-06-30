@@ -188,6 +188,32 @@ ChangeSession.diffs + commit work together.
 
 ---
 
+## 遇到 "[Planning required]" 被拦怎么办
+
+现象:AI 的编辑被拒,提示
+`Denied: [Planning required] This looks like a complex coding task. Enter plan mode...`
+
+原因:repo 开了 plan-mode 守卫,**复杂改动必须正式走"进入 plan mode → 出结构化计划 → 退出 plan mode"流程**才能改文件。
+只在聊天里写计划不算数,守卫仍会拦。AI 想改的内容本身是对的(把写死的 diff 颜色换成
+`var(--green)` / `var(--red)` / `var(--amber)` 令牌),只是流程没走对。
+
+解决:让它正式走一遍 plan mode 流程(发这段)。
+```text
+You're blocked by the planning guard because you wrote the plan in chat but
+didn't go through the formal plan-mode flow. Please:
+1. Enter plan mode.
+2. Inspect frontend/index.html and produce the structured plan (the Phase 1
+   Steps 1–5 we already agreed: CSS-only + red hexagon brand-mark, no bridge
+   changes, keep IDs/classes/events/payloads, keep data-theme mechanisms,
+   keep semantic green/red).
+3. Exit plan mode to get approval.
+4. Then make the incremental Phase 1 edits.
+```
+
+或:界面里若有"批准计划 / 退出 plan mode"按钮或权限模式切换(底部盾牌图标 / accept-all 旁),点批准也能放行。
+
+---
+
 ## 你可能要回答 AI 的问题
 
 它做完 PHASE 0 排查后,可能会问你:
