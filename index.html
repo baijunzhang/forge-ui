@@ -4,18 +4,89 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Forge AI IDE</title>
-  <!-- 设计令牌 + 全局样式（颜色/字体/间距/轻盈动效都在这里）-->
   <link rel="stylesheet" href="styles.css" />
-  <!-- 组件样式 -->
   <link rel="stylesheet" href="app.css" />
 </head>
 <body>
-  <!-- 应用根节点。AI 按 STEP 往这里加结构。 -->
-  <div id="app">
-    <!-- STEP 1 会在这里建布局骨架（左栏 / 中间 / 右栏 + 顶栏）-->
+  <!-- 整个 IDE 包一层 forge-ide 作用域，避免污染宿主软件其他页面 -->
+  <div id="app" class="forge-ide">
+
+    <!-- 顶栏 -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <span class="logo"><span class="logo-dot"></span>Forge</span>
+      </div>
+      <div class="topbar-right">
+        <label class="auto-toggle">
+          <span>自动接受编辑</span>
+          <span class="switch"><input type="checkbox" id="autoAccept" /><span class="slider"></span></span>
+        </label>
+        <button class="model-select" id="modelSelect">
+          <span class="status-dot"></span>claude-opus-4-8
+          <svg viewBox="0 0 16 16" width="12" height="12"><path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="main">
+      <!-- 左栏：文件树 -->
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-head">
+          <span>资源管理器</span>
+          <button class="icon-btn" title="新建文件" aria-label="新建文件">
+            <svg viewBox="0 0 16 16" width="15" height="15"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
+          </button>
+        </div>
+        <div class="filetree" id="filetree"></div>
+      </aside>
+
+      <!-- 中间：对话 + diff -->
+      <section class="center">
+        <div class="chat" id="chat"></div>
+
+        <div class="composer">
+          <div class="composer-box">
+            <textarea id="input" rows="1" placeholder="给 Forge 描述你想做的修改…  （Enter 发送，Shift+Enter 换行）"></textarea>
+            <div class="composer-actions">
+              <button class="icon-btn" title="附加文件" aria-label="附加文件">
+                <svg viewBox="0 0 16 16" width="16" height="16"><path d="M9 4L4.5 8.5a2 2 0 102.8 2.8L12 6.6a3.5 3.5 0 10-5-5L2.5 6" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
+              </button>
+              <button class="send-btn" id="sendBtn" aria-label="发送">
+                <svg viewBox="0 0 16 16" width="15" height="15"><path d="M2 8l12-5-4.5 5L14 13 2 8z" fill="currentColor"/></svg>
+              </button>
+              <button class="stop-btn" id="stopBtn" aria-label="停止" hidden>
+                <svg viewBox="0 0 16 16" width="13" height="13"><rect x="3" y="3" width="10" height="10" rx="1.5" fill="currentColor"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 右栏：Inspector（默认收起）-->
+      <aside class="inspector collapsed" id="inspector">
+        <button class="inspector-toggle" id="inspectorToggle" aria-label="展开/收起">
+          <svg viewBox="0 0 16 16" width="14" height="14"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
+        </button>
+        <div class="inspector-body">
+          <div class="inspector-section">
+            <h4>本次会话</h4>
+            <div class="kv"><span>模型</span><span>claude-opus-4-8</span></div>
+            <div class="kv"><span>Token</span><span>3,412</span></div>
+            <div class="kv"><span>预计成本</span><span>$0.05</span></div>
+          </div>
+          <div class="inspector-section">
+            <h4>引用文件</h4>
+            <div class="ref"><span class="dot dot-mod"></span>src/auth/login.ts</div>
+            <div class="ref"><span class="dot"></span>src/auth/session.ts</div>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <!-- toast -->
+    <div class="toast" id="toast" hidden></div>
   </div>
 
-  <!-- 交互逻辑（原生 JS，无需构建）-->
   <script src="app.js"></script>
 </body>
 </html>
