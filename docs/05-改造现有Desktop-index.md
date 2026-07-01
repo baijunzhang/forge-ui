@@ -733,6 +733,28 @@ Report what rendered and paste a screenshot-worthy description.
 
 ---
 
+## PHASE 2 前端 Step B 完成（已用真实改动验证）
+
+用真实改动验证:在 README.md 加 `diff UI test`(未 commit/rollback)。解析正确:
+汇总 `1 files changed +1 −0`;每文件卡(名+路径+`+1 −0`);unified diff 解析——
+`@@` 灰、上下文灰、新增行绿字+淡绿底+`+` 槽,删除行逻辑为红(本次无删)。中性风对。
+
+注意:AI 是**文字描述**渲染结果,还需在真实 app 里**眼见为实**。发这段:
+```text
+Good — the parsing looks correct. Two things:
+1. Show the ACTUAL rendered diff review panel in the running app (not a text
+   description). Trigger/display it for the README.md test change and describe
+   exactly what is on screen so I can compare with a screenshot.
+2. Minor: "1 files changed" should read "1 file changed" (singular when N==1).
+
+Then continue: STEP D — per-file Accept / Decline buttons (Decline calls
+rollbackChangeFile), and STEP E — Commit selected (commitChanges with {paths,message}),
+keeping the global Roll back as fallback. Frontend-only; one step at a time; report after each.
+```
+顺序:先 D(Accept/Decline)+ E(Commit)拿到闭环,Step C(并排)最后做。
+
+---
+
 ## 你可能要回答 AI 的问题
 
 它做完 PHASE 0 排查后,可能会问你:
