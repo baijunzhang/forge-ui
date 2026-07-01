@@ -801,6 +801,18 @@ file:// 安全限制)与本问题无关,通过真正 app / 本地服务器打开
 
 ---
 
+## 回归已修复 ✅ → 进 Step D/E
+
+第 3007 行语法错误已修:主题切换恢复、聊天正常、所有 handler 重新接上、
+git diff --check 无错(仅 CRLF 警告)、用 desktop.py 真实启动(Qt bridge 已连)。
+Step B 本就已完成,回归只是插曲。
+
+下一步:发上面"PHASE 2 前端 Step B 完成"节记录的那条指令(真实 app 看渲染 +
+"1 file" 单复数 + 进 Step D Accept/Decline + Step E Commit)。
+关键:现在是真实 app,让它触发真实改动,**亲眼在 app 里看绿红 diff 面板**并截图。
+
+---
+
 ## 你可能要回答 AI 的问题
 
 它做完 PHASE 0 排查后,可能会问你:
