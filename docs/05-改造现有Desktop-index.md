@@ -982,6 +982,25 @@ Do it incrementally, keep the app launching, report after each sub-step.
 
 ---
 
+## Step F 基本完成 → 收尾 top-actions CSS
+
+确认:right pane node/css ✅、icon buttons(✓/✕)✅、hunk divider(@@ 已隐藏)✅、
+bridge wiring ✅、node/git 检查通过。用户看不到 raw @@ 了。
+
+AI 自查发现 `top actions css False`:JS 有 `diff-review-top-actions` 但缺 CSS。收尾发这段:
+```text
+Yes, finish those steps:
+1. Add the .diff-review-top-actions CSS rule.
+2. Move the Commit button to the review pane header / top-right (like the Codex reference).
+3. Ensure each per-file header shows: filename + "+N −M" + the ✓ (accept) and ✕ (decline) icons.
+4. Relaunch and verify (node --check, git diff --check, bridge wiring intact).
+Then show me the final right-side diff panel so I can compare with the Codex reference.
+Frontend-only; report after.
+```
+做完触发一次改动,截图右侧 diff 面板对比 Codex 参考图。
+
+---
+
 ## 你可能要回答 AI 的问题
 
 它做完 PHASE 0 排查后,可能会问你:
