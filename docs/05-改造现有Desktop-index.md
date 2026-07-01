@@ -286,6 +286,40 @@ After the pass, launch and show me. Do not start Phase 2.
 
 ---
 
+## 轻盈化后的评估（深/浅双模式已出）
+
+进步明显,尤其浅色模式已接近 Claude/Codex 的通透感。剩余可改进(都不大):
+1. 深色底色偏紫/藏蓝,可再调更中性的暖灰,深色也会更轻。
+2. 会话卡片的红左边框+粉底是唯一还"响"的地方 → 建议只在**选中时**才显示高亮。
+3. 最重要:**新配色下的 diff(绿红)还没验证过**。这是项目核心,先看它好不好看再继续。
+
+优先级:**先触发一次真实改动看 diff 显示 → 满意就进 Phase 2**,不要陷在无限微调外观。
+验证 diff 可发:`帮我在 frontend/README.md 末尾加一行 "test"，让我看看 diff 的显示效果`
+
+## 修正 HSBC 标志（原菱形像别家银行）
+
+原 `.brand-mark` 是红色菱形/四边形,像别家银行。换成 HSBC 标准的**六边形红白沙漏**。
+只换 `.brand-mark` 内的图形,保留 class 和节点(不破坏 JS)。发这段:
+```text
+The current brand mark is a red diamond/quadrilateral that looks like another
+bank's logo. Replace ONLY the graphic inside the existing .brand-mark node with
+the proper HSBC hexagon (red/white hourglass). Keep the .brand-mark class and
+node so JS/layout is unaffected. Use this SVG:
+
+<svg viewBox="0 0 40 40" width="22" height="22" aria-label="HSBC">
+  <polygon points="0,20 10,0 30,0 40,20 30,40 10,40" fill="#ffffff"/>
+  <polygon points="10,0 30,0 20,20" fill="#db0011"/>
+  <polygon points="10,40 30,40 20,20" fill="#db0011"/>
+</svg>
+
+In light mode, add a faint stroke to the white hexagon so it stays visible:
+stroke="#e0ded7" stroke-width="0.6" on the first polygon.
+CSS-only + this markup swap. Do not touch bridge, IDs, events, or payloads.
+```
+> 注意:HSBC 官方标志有版权。此 SVG 为忠实近似版,内部工具可用;对外发布请用内部品牌团队的官方 SVG 素材。
+
+---
+
 ## 你可能要回答 AI 的问题
 
 它做完 PHASE 0 排查后,可能会问你:
