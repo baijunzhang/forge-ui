@@ -320,6 +320,53 @@ CSS-only + this markup swap. Do not touch bridge, IDs, events, or payloads.
 
 ---
 
+## 修正 HSBC 标志（正确版：六边形 + X 分割 + 红白沙漏）
+
+之前给的菱形/半白版都不对。正确的 HSBC 标志是六边形被 X 分成四块:上下红三角、
+左右白三角、左右两个红尖角。发这段(只换 `.brand-mark` 内图形,保留 class/节点):
+```text
+Replace ONLY the graphic inside the existing .brand-mark node with the correct
+HSBC hexagon. Keep the .brand-mark class/node. Use exactly this SVG:
+
+<svg viewBox="0 0 40 40" width="22" height="22" aria-label="HSBC">
+  <polygon points="0,20 10,0 10,40" fill="#db0011"/>
+  <polygon points="40,20 30,0 30,40" fill="#db0011"/>
+  <polygon points="10,0 30,0 20,20" fill="#db0011"/>
+  <polygon points="10,40 30,40 20,20" fill="#db0011"/>
+  <polygon points="10,0 10,40 20,20" fill="#ffffff"/>
+  <polygon points="30,0 30,40 20,20" fill="#ffffff"/>
+</svg>
+
+CSS/markup swap only. Do not touch bridge, IDs, events, or payloads.
+```
+> HSBC 标志为注册商标;此为几何还原版,内部工具用;对外发布请用品牌团队官方素材。
+
+## Codex 风格功能清单（用户从 Codex 截图指出的）
+
+**A. 运行中 session 的状态小圆点 + 多会话并行**
+- 前端:每个 session 加状态点(运行=亮/呼吸,空闲=灰)。
+- ⚠️ 真正"多个同时运行"是**后端并发能力**,需 Python 端支持并行 session;前端只能显示。
+  这条单独评估,先不混进本轮 UI。
+
+**B. 侧边栏 folder 分组**
+- 现在是平铺 session 列表 → 改成可折叠的 folder 分组(如 Codex/ChatGPT/… 那样),更清晰。
+
+**C. Codex 风格 diff（= Phase 2 的目标形态）**
+```
+2 files changed  +9 −6            ← 顶部汇总
+┌ src/hero.tsx  +8 −5     ✓  ✕    ← 每文件卡片 + Accept/Decline
+│ 红行(左侧红槽 −) / 绿行(左侧绿槽 +)
+右上角:Open ▾   Commit ▾          ← 提交入口
+```
+干净、留白足、绿红清楚。Phase 2 接 `ChangeSession.diffs` 时按这个形态做。
+
+### 建议顺序
+1. 现在:发修正 logo。
+2. 然后 Phase 2:Codex 式 diff(每文件卡片 + ✓/✕ + Commit)+ session 小圆点 + folder 分组。
+3. 多窗口并行:需后端评估,单独立项。
+
+---
+
 ## 你可能要回答 AI 的问题
 
 它做完 PHASE 0 排查后,可能会问你:
