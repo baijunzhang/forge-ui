@@ -538,6 +538,40 @@ No DOM/ID/bridge changes. Report what you changed. Show both themes after.
 
 ---
 
+## 设计原则参考（为何 Codex/Claude Code 舒服）
+
+本质:不是"字好看",而是**代码审阅 + 任务代理的工作流 UI**——让用户始终知道
+AI 在想什么、改了哪、下一步做什么、能不能撤回。核心是**降低 cognitive load**。
+
+流程模型(而非普通聊天):
+`读文件 → 解释计划 → 修改代码 → 展示 diff → 请求批准 → 跑测试 → 总结`
+
+信息分层(眼睛不用猜哪是解释/代码/改动):
+- 自然语言解释:短段落
+- 代码块:等宽 + 高亮
+- diff:红删绿增(变化作为核心展示单位,不是"回答")
+- 状态:searching / editing / running tests / waiting for approval
+- 操作按钮:Accept / Reject / Apply / Rewind(语义明确)
+
+安心感来源:用户知道自己有**刹车、撤销、审批权**(sandbox / approval / checkpoint / rewind)。
+
+### 已覆盖 vs 待补
+- 已在做:diff-first、Accept/Reject/Commit、Rollback、Plan mode、中性低噪布局、权限。
+- 待补(新)——建议列入 Phase 3:
+  1. **Task Timeline**:Read → Plan → Edit → Test → Summary 的进度时间线(最有价值)。
+  2. **Status Chips**:Reading file / Running tests / Needs approval 实时状态条(消除黑箱)。
+  3. **Checkpoint / Rewind**:每次关键改动前自动存档,可逐步回退(比全局 rollback 更细)。
+  4. **Context Panel**:文件 / 规则 / terminal / memory 集中(可由右侧 Inspector 演进)。
+
+### 优先级
+Phase 2 先把 diff + Accept/Decline/Commit 做扎实(地基)→
+Phase 3 做 Task Timeline + Status Chips(对舒服感提升最大,且纯前端)→
+之后 Checkpoint、Context Panel。
+
+设计关键词一句话:**Chat + Code review UI + Task progress timeline + Safe approval system。**
+
+---
+
 ## 你可能要回答 AI 的问题
 
 它做完 PHASE 0 排查后,可能会问你:
