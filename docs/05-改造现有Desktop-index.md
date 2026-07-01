@@ -565,8 +565,19 @@ AI 在想什么、改了哪、下一步做什么、能不能撤回。核心是**
 
 ### 优先级
 Phase 2 先把 diff + Accept/Decline/Commit 做扎实(地基)→
-Phase 3 做 Task Timeline + Status Chips(对舒服感提升最大,且纯前端)→
-之后 Checkpoint、Context Panel。
+Phase 3 做 Task Timeline + Status Chips → 之后 Checkpoint、Context Panel。
+
+### 更正:Phase 3 是否碰后端(此前"纯前端为主"说法不准确)
+| Phase 3 项 | 显示 | 真实数据 | 是否碰后端 |
+|-----------|------|----------|-----------|
+| Task Timeline | 前端 | 需后端发步骤事件 | 若后端已发活动事件→纯前端,否则要后端 |
+| Status Chips | 前端 | 需后端报告状态 | 同上 |
+| Checkpoint/Rewind | 前端 | 后端做文件/git 快照 | ❌ 一定碰后端 |
+| Context Panel | 前端 | 数据来自 bridge | 显示前端,取数靠后端 |
+
+判断:现有已有工具卡片/System 消息 → 后端很可能已发事件,则 Timeline/Status 有机会纯前端。
+Phase 3 开始时**先排查后端发了哪些事件**再决定(同样"先查后改")。
+若要严格只动前端:只做能用现有数据的部分,Checkpoint/新数据的 Context Panel 推后。
 
 设计关键词一句话:**Chat + Code review UI + Task progress timeline + Safe approval system。**
 
