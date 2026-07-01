@@ -1095,6 +1095,39 @@ F12 抓 commit 报错更好定位。
 
 ---
 
+## 三处调整:去 Commit + 主题改名 + 两层文件审阅
+
+1. **去掉 Commit(git)**:金融人不用 git 且老报错。保留 Accept(保留/标记)、Decline(回滚该文件)、
+   全局 Undo all changes。后端 commitChanges 留着不调用即可。
+2. **"Dark blue" → "Dark"**:颜色实际不蓝,改显示文字。
+3. **两层文件审阅(Codex 式)**:右面板先显示**文件列表**(文件名 + +N−M + ✓/✕),
+   点某文件才展开它的绿红逐行 diff(默认折叠)。现在是一进来铺开,改成列表→点开详情。
+
+发这段:
+```text
+Three frontend-only changes to the review panel. Keep bridge/backend intact.
+
+CHANGE 1 — Remove the Commit (git) feature entirely:
+- Remove the "Commit" button, the commit message box, and the commitChanges call.
+- Finance users don't use git. Keep per-file Accept (mark kept / dismiss the card) and
+  Decline (calls rollbackChangeFile to undo that file). Keep the global "Undo all changes".
+- This also removes the commit error path.
+
+CHANGE 2 — Rename theme label "Dark blue" to "Dark" (the color isn't blue). Label text
+only; keep the theme mechanism working.
+
+CHANGE 3 — Two-level file review, like Codex:
+- The right panel first shows a FILE LIST: one row per changed file = filename + "+N −M"
+  (and the ✓ keep / ✕ undo icons). Do NOT show the full diff yet.
+- Clicking a file row expands/opens that file's red/green line-by-line diff below it
+  (collapsible). Collapsed by default. Only one or multiple can expand — your call, keep simple.
+- Keep neutral Codex styling; green/red only on +/− lines.
+
+Verify by clicking in the running app. Report what changed.
+```
+
+---
+
 ## 你可能要回答 AI 的问题
 
 它做完 PHASE 0 排查后,可能会问你:
