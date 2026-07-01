@@ -858,6 +858,27 @@ diff 面板只在 AI **真正修改/创建了项目文件**(产生 ChangeSession
 
 ---
 
+## Bug:Feature Connections 勾选框 ~2 秒后自动重置
+
+现象:取消 BBG/Outlook/Board 勾选后约 2 秒又自动勾回默认(全选),无法关闭功能。
+性质:纯前端状态被重置(面板定时重渲染,把勾选重置回默认)。**不破坏后端**,
+但导致"关闭开关"失效(功能默认全开仍能跑)。可能是 Phase 2 diff hook(挂在
+desktopUpdateActivity)引发重渲染,也可能是原有定时刷新。发这段查+修:
+```text
+Bug: the Feature Connections checkboxes (BBG, Outlook, Board collections) re-check
+themselves about 2 seconds after I uncheck them, so I can't disable a feature.
+
+1. Find what re-renders or resets these checkboxes (a periodic poll, a state refresh,
+   getInitialState, or the recent Phase 2 diff-review hook in desktopUpdateActivity).
+2. Tell me whether this is pre-existing or was introduced by the Phase 2 frontend edits.
+3. Fix it so the user's checkbox choices PERSIST and are not overwritten by re-render,
+   WITHOUT breaking the diff review or the feature-connection backend behavior.
+Frontend-first; if a backend read is involved, explain before changing it. Report the cause.
+```
+先让它说清是否本次引入:是→修重置逻辑;否→老 bug,与本次无关。
+
+---
+
 ## 你可能要回答 AI 的问题
 
 它做完 PHASE 0 排查后,可能会问你:
