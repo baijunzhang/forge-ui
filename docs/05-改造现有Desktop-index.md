@@ -1045,6 +1045,21 @@ a real commit that shows in git log. Frontend-only; report the root cause of eac
 
 ---
 
+## 两 bug 已修(静态)→ 必须真实点击验证
+
+修法正确:
+- Bug 2 → **事件委托**(document delegate):按钮重渲染后点击仍有效(之前死按钮的根因是重渲染丢了事件)。
+- Bug 1 → hide default + show class add + clear on desktopClear:默认隐藏/有改动才显示/新会话清空。
+- commitChanges/rollbackChangeFile 调用 + commit 错误保护 + bridge 接线;node/git 检查通过。
+
+但仍是静态 True ≠ 真能用(上次教训)。必须真实点击:
+1. 改文件 → 右面板出现;2. 点 ✓ 有反应;3. 点 ✕ 文件回滚;4. Commit 填信息 → git log 有提交;
+5. New chat → 面板清空/隐藏;6. F12 看无报错。每步亲手点+截图。
+
+小提醒:工作区有 untracked `test2.py`(测试遗留),回头 `git` 清理即可。
+
+---
+
 ## 你可能要回答 AI 的问题
 
 它做完 PHASE 0 排查后,可能会问你:
