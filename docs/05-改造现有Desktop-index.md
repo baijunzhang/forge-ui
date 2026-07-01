@@ -432,6 +432,44 @@ Keep it minimal and calm. After the pass, launch and show me both themes.
 
 ---
 
+## PHASE 2 计划（AI 已出 + 已批准）
+
+AI 排查后给出方案,签名与安全均正确,**已批准**。
+
+后端三方法:
+- `getChangeSessionDiffs(session_id)` — 把 diff 给前端
+- `commitChanges(session_id, { paths, message })` — 提交选中文件
+- `rollbackChangeFile(session_id, path)` — 按文件回滚(Decline 用)
+
+安全:拒绝可疑路径 / 空选择;`subprocess.run([...], shell=False, cwd=<repo>)`;不用 `--no-verify`。
+
+前端:每文件一卡(路径 + `+N/−N` + 勾选框 + Accept + Decline + 行内/并排切换);
+Accept 标记接受并允许勾选提交;Decline 调 `rollbackChangeFile`;Commit 调 `commitChanges`;
+保留原 "Roll back changes" 作全局兜底。
+
+### 批准回复（发这段）
+```text
+Approved. The three methods and signatures are correct, and the security approach
+(list-form subprocess, shell=False, cwd=repo, no --no-verify, reject suspicious/empty
+paths) is good. Proceed INCREMENTALLY:
+
+1. Backend first: add getChangeSessionDiffs, commitChanges, rollbackChangeFile.
+   After adding, show me a SAMPLE of what getChangeSessionDiffs returns, so the
+   frontend renders correctly.
+2. Then frontend: per-file diff cards in the NEUTRAL Codex/Claude style — green/red
+   ONLY for added/removed lines, everything else monochrome; generous whitespace;
+   Accept / Decline / checkbox / Commit / inline-vs-side-by-side toggle. Keep the
+   existing Roll back as a global fallback.
+3. Keep all bridge wiring and IDs intact. One step at a time; report after each.
+
+If the planning guard blocks an edit, proceed without formal plan-mode (Option 2) —
+those tools aren't available in this session.
+```
+
+提醒:先后端(加完给样例数据)→ 再前端;diff 配色接中性 Codex 风(绿红只给增删行)。
+
+---
+
 ## 你可能要回答 AI 的问题
 
 它做完 PHASE 0 排查后,可能会问你:
