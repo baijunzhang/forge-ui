@@ -485,6 +485,22 @@ Report the old vs new hex values. CSS-only, no other changes.
 
 ---
 
+## 结论:颜色达标，别在空屏上继续调
+
+偏紫经确认是显示器/拍照色差,实际接近纯黑。颜色基本收工。
+唯一可选微调:纯黑 `#000` 略硬,可柔化为中性炭灰(Claude/Codex 不用纯黑)。
+主题名 `dark-blue` 实为黑,只是命名,可选择性改为 `dark`(优先级低)。
+```text
+If the dark background is pure #000, soften it slightly to a neutral charcoal
+(#1a1a1a bg, #202020 surface) — Claude/Codex avoid pure black for a calmer feel.
+Also optional: the theme is labelled "dark-blue" but renders black; you may rename
+it to "dark" for clarity (update the attribute value everywhere consistently).
+CSS/attribute only, no logic changes.
+```
+核心建议:**别在空屏继续调色**,推进 Phase 2——有真实 diff 出来才是验收时刻。
+
+---
+
 ## 你可能要回答 AI 的问题
 
 它做完 PHASE 0 排查后,可能会问你:
