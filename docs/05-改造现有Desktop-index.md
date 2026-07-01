@@ -713,6 +713,26 @@ Frontend-only; keep bridge/IDs/backend untouched. Report after this step.
 
 ---
 
+## 验证 diff 显示（Step B 之后做，用来检查绿红渲染）
+
+进度:Step A = 只有汇总条(几个文件 +X −Y);Step B = 才有绿红逐行 diff 卡。
+但"有卡片"还不够——**必须有真实代码改动,才有东西可显示**。所以 Step B 完成后,
+让 AI 实际改一个小文件,再看 diff 卡片是否正确渲染绿红。发这段:
+```text
+Now let's verify the diff rendering with a REAL change. Make a tiny edit so a
+ChangeSession is produced, e.g. append a line "diff UI test" to the end of
+frontend/README.md (or any safe file). Then show me:
+1. The end-of-turn review summary ("N files changed +X −Y").
+2. The per-file diff card rendering the unified diff — confirm added lines are green,
+   removed lines red, context muted, and the layout is the neutral Codex style.
+Do NOT commit or roll back yet — I just want to see the diff display.
+Report what rendered and paste a screenshot-worthy description.
+```
+检查点:①有汇总条 ②有每文件卡 ③绿增红删清楚 ④整体中性不花。
+看着对 → 继续 Step C/D/E(行内/并排、Accept/Decline、Commit)。
+
+---
+
 ## 你可能要回答 AI 的问题
 
 它做完 PHASE 0 排查后,可能会问你:
