@@ -755,6 +755,30 @@ keeping the global Roll back as fallback. Frontend-only; one step at a time; rep
 
 ---
 
+## 回归 bug:diff 改动后主题切换失效
+
+现象:Step A/B 的 diff 改动后,打开 frontend/index.html,Light/Dark 切换按钮点了没反应。
+原因:很可能新增的 ~271 行 JS 里有一个错误,导致脚本中断,后面绑定主题切换/其他
+handler 的代码没跑。(主题切换是纯前端,与 bridge 无关。)
+
+快速自查:浏览器按 F12 → Console → 看有没有红色报错。
+让 AI 修,发这段:
+```text
+Regression: after the Phase 2 diff-review edits, the Light/Dark theme toggle stopped
+working when opening frontend/index.html. This is likely a JavaScript error introduced
+in the recent edits that halts script execution and breaks event handlers (including
+the theme toggle).
+
+1. Open the browser console / check for a JS error in index.html and find the exact line.
+2. Fix it so the script runs cleanly again.
+3. Verify: theme toggle works, AND the other existing handlers (New chat, Refresh,
+   sessions, send) still work.
+Frontend-only. Report the error you found and the fix.
+```
+修不好可用 git 退回上一个好版本(这正是每步验证+还原点的意义)。
+
+---
+
 ## 你可能要回答 AI 的问题
 
 它做完 PHASE 0 排查后,可能会问你:
