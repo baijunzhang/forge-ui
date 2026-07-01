@@ -611,6 +611,26 @@ Do NOT start the frontend yet — just show me the sample output and signatures.
 
 ---
 
+## 安全规则:碰后端可以，但别碰坏现有功能
+
+碰后端 OK,核心底线是**不破坏已有重要功能**(邮箱/BBG/看板/session/rollback)。
+坚持三条:
+1. **只加不改**:新增方法,不改现有方法的签名/行为。
+2. **每次回归验证**(py_compile 通过 ≠ 功能没坏)。碰完后端固定发这段:
+```text
+After any backend change, verify existing features still work — do NOT just rely on
+py_compile. Confirm these are unaffected and report how you checked:
+- session load / save / new chat / refresh
+- Feature Connections (BBG, Outlook mail, Board collections)
+- global rollback (rollbackChangeSession)
+- the QWebChannel bridge (getInitialState, desktopInit, existing slots)
+List any existing method you modified (vs newly added). If you changed an existing
+method's signature or behavior, stop and tell me first.
+```
+3. **及时 git commit 建还原点**:每完成一个稳定阶段就 commit,坏了可 `git checkout`/`git reset` 回退。
+
+---
+
 ## 你可能要回答 AI 的问题
 
 它做完 PHASE 0 排查后,可能会问你:
