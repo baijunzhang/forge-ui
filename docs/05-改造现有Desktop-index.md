@@ -631,6 +631,65 @@ method's signature or behavior, stop and tell me first.
 
 ---
 
+## PHASE 2 数据结构确认 + 前端 diff UI 指令
+
+安全确认(第5段):**无现有方法被改**——session/邮箱/BBG/看板/全局 rollback 原样,
+仅新增方法 + 几行 import。纯新增零破坏。
+
+`getChangeSessionDiffs(session_id)` → JSON 字符串:
+```
+{ ok, session_id, status, files: [
+  { path, filename, added, removed,
+    diff: "unified diff 文本",   ← 关键:统一 diff 字符串,不是逐行记录
+    before, after, before_exists, after_exists, before_truncated, after_truncated } ] }
+```
+`commitChanges(session_id, {paths, message})` → `{ok, commit, paths, relative_paths}` /
+失败 `{ok:false, error}`;`rollbackChangeFile(session_id, path)`;全局 `rollbackChangeSession` 保留。
+
+### 前端 diff UI 指令（纯前端，调用新 bridge 方法）
+```text
+Phase 2 backend confirmed safe (no existing method changed). Now build the FRONTEND
+diff review UI in frontend/index.html. Frontend-only + calling the new bridge methods.
+Do NOT modify backend, existing bridge wiring, IDs, or existing features.
+
+Data: getChangeSessionDiffs(session_id) returns a JSON string with files[], each file:
+{ path, filename, added, removed, diff (UNIFIED DIFF TEXT), before, after, ... }.
+The per-file `diff` is a UNIFIED DIFF STRING — parse it to render lines.
+
+Build INCREMENTALLY, one step at a time, report after each:
+
+STEP A — Fetch & summary
+- When a coding turn ends with changes, call getChangeSessionDiffs(currentSessionId),
+  JSON.parse it. Render header: "<N> files changed  +<sumAdded> −<sumRemoved>".
+
+STEP B — Per-file diff card (neutral Codex/Claude style)
+- One card per file: filename + dim full path + "+added −removed".
+- Parse the unified diff string:
+  * line starts with '+' (not '+++') → added: green text, subtle green bg, "+" gutter
+  * line starts with '-' (not '---') → removed: red text, subtle red bg, "−" gutter
+  * '@@' → hunk header, muted monochrome
+  * ' ' → context, muted
+  * skip 'diff --git' / 'index' / '---' / '+++' lines
+- Monospace; green/red ONLY on +/- lines; everything else neutral grey.
+  Generous padding, 1px subtle borders, no heavy shadows.
+
+STEP C — inline / side-by-side toggle (inline default).
+
+STEP D — Accept / Decline per file
+- Accept: mark accepted in frontend state; enable its commit checkbox.
+- Decline: call rollbackChangeFile(session_id, path); on ok, remove/mark the card.
+
+STEP E — Commit selected
+- Commit button collects checked (accepted) paths + a message, calls
+  commitChanges(session_id, JSON.stringify({paths, message})).
+- {ok:true, commit}: success toast with hash, clear committed cards.
+- {ok:false, error}: show error. Keep global "Roll back changes" as fallback.
+
+Neutral styling. One step at a time; keep app launching; report after each.
+```
+
+---
+
 ## 你可能要回答 AI 的问题
 
 它做完 PHASE 0 排查后,可能会问你:
