@@ -840,6 +840,24 @@ Report results and paste `git log -1` for the commit test.
 
 ---
 
+## 如何触发绿红 diff 面板（测试用）
+
+diff 面板只在 AI **真正修改/创建了项目文件**(产生 ChangeSession)时才出现。
+"写段代码给我看" / "介绍你自己" 只是聊天,不改文件 → 无 diff。
+
+要触发,在 app 输入框里给**明确改文件**的任务,例如:
+- `在 frontend/README.md 文件末尾加一行 "hello world"`
+- `创建一个新文件 test.py，内容是 print("hello from HSBC")`
+- `修改 frontend/README.md，在开头加一个标题 "# AI Studio"`
+
+改完回合结束 → 底部出现绿红 diff 审阅面板(Accept/Decline/Commit)。
+| 说法 | 结果 |
+|------|------|
+| 写段代码 / 介绍自己 | 聊天显示代码,无 diff |
+| 在 X 文件加一行 / 建个 X 文件 | 真改文件 → 出绿红 diff 面板 |
+
+---
+
 ## 你可能要回答 AI 的问题
 
 它做完 PHASE 0 排查后,可能会问你:
