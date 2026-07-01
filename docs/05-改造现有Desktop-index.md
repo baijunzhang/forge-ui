@@ -246,6 +246,46 @@ keep semantic green/red. Do not start Phase 2.
 
 ---
 
+## Phase 1 补充:轻盈化（换色不等于轻盈）
+
+现象:Phase 1 换了颜色(HSBC 红六边形、红按钮),但**还是不轻盈**,只是"颜色换了一下"。
+
+原因:轻盈 ≠ 颜色。Claude/Codex 的"轻"来自这四样,Phase 1 都还没做:
+- **留白/间距大**(现在元素挤、密)
+- **强调色用得少**(现在红用太满:实心红按钮 + 红框选中卡片 → 反而更重)
+- **边框极淡 1px 低透明**(现在侧边卡片是粗红边框,很重)
+- **背景中性、靠微妙明度分层**(现在偏暗蓝、闷)
+
+核心口诀:**红色只点缀不涂满;留白撑开不塞满;边框要淡不要粗。少即是轻。**
+强调色应覆盖 < 10% 的界面。
+
+### 轻盈化补充步骤（纯 CSS,发这段）
+```text
+Phase 1 changed colors but the UI still feels heavy, not airy like Claude/Codex.
+Do one more CSS-only pass focused on LIGHTNESS (no bridge/DOM/ID changes):
+
+1. Use the accent SPARINGLY. The red is overused.
+   - "New chat" / primary buttons: NOT solid saturated red. Use a subtle style
+     (light accent-subtle background OR outline), red reserved for small accents.
+   - The selected session card: remove the heavy red border. Use a soft
+     accent-subtle background or a thin 2px left-border only, rounded off.
+2. More whitespace: increase padding inside cards, list rows, sidebar, composer;
+   bigger gaps between sections; line-height ~1.6.
+3. Borders: make all borders 1px, low-opacity/subtle. Remove boxy heavy dividers;
+   separate with spacing instead.
+4. Background: neutral and calm; layer surfaces by SLIGHT brightness differences,
+   not by strong colors or borders. Avoid the heavy dark-blue feel.
+5. Reduce visual weight overall: lighter font weights for secondary text (use a
+   muted grey), no heavy shadows.
+
+Keep it minimal and restrained — accent color on <10% of the surface.
+After the pass, launch and show me. Do not start Phase 2.
+```
+
+最见效的是第 1 条(少用红)+ 第 2 条(加留白)。
+
+---
+
 ## 你可能要回答 AI 的问题
 
 它做完 PHASE 0 排查后,可能会问你:
