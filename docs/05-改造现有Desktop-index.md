@@ -392,6 +392,46 @@ session 小圆点 / folder 分组(纯前端)等 diff 主体完成后再加。
 
 ---
 
+## 方向调整:转中性 Codex/Claude 风（红不铺满，只留 logo）
+
+洞察:Codex/Claude Code 的舒服感**不是颜色,是中性 + 留白 + 克制**。之前把红铺满反而更远。
+新方向:全局黑白灰,主按钮黑/白(非彩色),HSBC 红只保留在左上角 logo。
+
+配方:
+| 要素 | 做法 |
+|------|------|
+| 配色 | 中性:深色=中性炭灰(非蓝),浅色=暖白;全局黑白灰 |
+| 强调色 | 极少;主按钮黑/白,彩色只用于小状态点 |
+| 留白 | 大量,靠空间分隔 |
+| 边框 | 1px ~8% 透明度,甚至无 |
+| 图标 | 单色描边 |
+| 无 | 无渐变、无重阴影 |
+| diff | 绿/红只留给增删行 |
+
+一句话:**中性打底,黑白做按钮,留白撑空间,颜色只留给 diff。**
+
+### 发这段（纯 CSS，转中性风）
+```text
+New direction: make the UI neutral like Codex / Claude Code. The look comes from
+neutrality + whitespace + restraint, NOT color. CSS-only, no bridge/DOM/ID changes.
+
+1. Palette → neutral. Dark mode: neutral charcoal greys (NOT blue), e.g.
+   bg #1a1a1a, surface #222, text #e8e8e8 / secondary #a0a0a0 / muted #6e6e6e.
+   Light mode: warm white bg #fafafa, surface #fff, text #1a1a1a / secondary #666.
+   Borders: 1px at ~8% opacity (rgba(255,255,255,.08) dark / rgba(0,0,0,.08) light).
+2. Accent → almost none. Primary buttons ("New chat", Send) become monochrome:
+   dark bg + light text in light mode, light bg + dark text in dark mode. NOT red.
+   Keep the HSBC hexagon logo (small, top-left) as the only brand color.
+3. Whitespace → generous padding in sidebar, list rows, composer; roomy gaps.
+4. Remove any remaining gradients and heavy shadows. Subtle only.
+5. Keep semantic green/red ONLY for diff add/remove.
+6. Icons monochrome. Selected session = soft neutral grey background, no colored border.
+
+Keep it minimal and calm. After the pass, launch and show me both themes.
+```
+
+---
+
 ## 你可能要回答 AI 的问题
 
 它做完 PHASE 0 排查后,可能会问你:
