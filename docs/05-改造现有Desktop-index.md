@@ -779,6 +779,28 @@ Frontend-only. Report the error you found and the fix.
 
 ---
 
+## 确切错误:index.html:3007 SyntaxError
+
+控制台确认:`Uncaught SyntaxError: Unexpected token '.'  index.html:3007`。
+第 3007 行 JS 语法错误 → 整段脚本崩溃 → 主题切换等 handler 全失效。发这段:
+```text
+Found the exact error in the console:
+  Uncaught SyntaxError: Unexpected token '.'   at index.html:3007
+
+Go to line 3007 in frontend/index.html and fix that syntax error (likely a stray '.',
+a malformed optional-chaining, or a typo from the recent diff-review edits). The error
+halts the whole script, which is why the theme toggle and other handlers stopped working.
+
+After fixing:
+1. Confirm the console has no SyntaxError.
+2. Verify theme toggle, New chat, Refresh, sessions, and send all work again.
+Frontend-only. Show me the before/after of the fixed line.
+```
+另一条报错 `'file:' URLs are treated as unique security origins`(HTML 预览 iframe 的
+file:// 安全限制)与本问题无关,通过真正 app / 本地服务器打开即无,优先级低,先忽略。
+
+---
+
 ## 你可能要回答 AI 的问题
 
 它做完 PHASE 0 排查后,可能会问你:
