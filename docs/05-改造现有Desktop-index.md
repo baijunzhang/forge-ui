@@ -1060,6 +1060,41 @@ a real commit that shows in git log. Frontend-only; report the root cause of eac
 
 ---
 
+## 真实点击暴露 3 个联动 bug
+
+- **A. Commit 报错**:弹 alert "Path is not in this change session: ...test2.py"——前端发的路径
+  与后端 session.modified_files 不匹配(斜杠/大小写/或用了旧 session)。且用了丑的 JS alert。
+- **B. New chat 不清右面板**:上次 Bug 1 没真修好——clear 只接了 desktopClear,没接 New chat 按钮。
+- **C. Accept(✓)无反馈**:点了没变化,不知道成没成。
+- 关键:A 和 B 可能同根——面板显示旧 session 的 diff,commit 发旧路径 → 后端说不在当前 session。
+
+发这段(一次修 3 个):
+```text
+Real clicking revealed 3 linked bugs. Fix all, then verify by actually clicking:
+
+BUG A — Commit fails with alert "Path is not in this change session":
+- The path sent to commitChanges doesn't match the backend session's modified_files.
+- Send the SAME session_id that getChangeSessionDiffs returned, and the EXACT path
+  string from that payload (normalize slashes/case if needed).
+- Replace the raw JavaScript alert() with an inline, finance-friendly message inside the
+  review panel (e.g. red text line), not a browser popup.
+
+BUG B — Right review panel does not clear on New chat:
+- Wire the panel clear+hide to the "New chat" button AND session switching, not only
+  desktopClear. After New chat, the panel must be empty/hidden.
+- Ensure the panel always reflects ONLY the current session's changes.
+
+BUG C — Accept (✓) gives no visible feedback:
+- On Accept, clearly mark the file as accepted (filled check / dim or collapse the card)
+  and enable it for commit. The user must see that it worked.
+
+Check the console when clicking. Verify by ACTUALLY clicking accept, decline, commit, and
+New chat in the running app. Report the root cause of each.
+```
+F12 抓 commit 报错更好定位。
+
+---
+
 ## 你可能要回答 AI 的问题
 
 它做完 PHASE 0 排查后,可能会问你:
