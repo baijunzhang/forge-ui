@@ -1015,6 +1015,36 @@ AI 的 ASCII 示意布局对上 Codex:聊天左/diff 右、Commit 右上、READM
 
 ---
 
+## 真实 app 发现两个功能 bug（静态检查没抓到）
+
+布局对了(右侧面板/✓✕/Commit 右上/test2.py +1−0/绿增行),但真实点击暴露 2 个 bug:
+- **Bug 1**:右侧 Review 面板常驻——开 New chat 后仍留着上个会话的 diff,分不清多会话。
+  应:只有当前会话有待审改动才显示;换会话/新会话清空+隐藏。
+- **Bug 2**:点 Commit / ✓ / ✕ **无反应**——按钮没真正接上功能(静态"True"只是代码存在)。
+
+自查:点击时 F12 Console 看报错。发这段修:
+```text
+Two real bugs found by clicking in the actual app:
+
+BUG 1 — Right "Review" panel visibility:
+- The right diff panel must appear ONLY when the CURRENT session has changes to review.
+- On "New chat" / switching sessions, CLEAR and HIDE the review panel and its state, so
+  a previous session's diff never leaks into a new chat.
+
+BUG 2 — Buttons do nothing:
+- Clicking Commit, the ✓ (accept) icon, or the ✕ (decline) icon has NO effect.
+- Check the console for errors when clicking. Verify the click handlers are actually
+  attached to these elements (they may lose handlers after re-render) and that they call:
+  ✓ → mark accepted + enable commit; ✕ → bridge.rollbackChangeFile; Commit → bridge.commitChanges({paths,message}).
+- Fix so all three actually work end to end.
+
+Verify by ACTUALLY clicking in the running app (not static checks): accept, decline, and
+a real commit that shows in git log. Frontend-only; report the root cause of each bug.
+```
+教训:静态检查(代码存在)≠功能可用。必须真实点击验证。
+
+---
+
 ## 你可能要回答 AI 的问题
 
 它做完 PHASE 0 排查后,可能会问你:
