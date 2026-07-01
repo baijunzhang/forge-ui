@@ -470,6 +470,21 @@ those tools aren't available in this session.
 
 ---
 
+## 中性风执行后的修正:深色底去蓝紫
+
+执行中性指令后:按钮已中性(白/灰)、logo 正确、浅色干净 ✅。
+但深色底仍带蓝紫调,需转纯中性炭灰。发这段(纯 CSS):
+```text
+The dark theme background still has a blue/purple tint. Make it truly NEUTRAL
+charcoal like Codex/Claude. Check the dark-theme background/surface CSS variables
+and remove any blue/purple hue — use neutral greys, e.g.:
+  bg #1a1a1a, surface #202020, elevated #262626, border rgba(255,255,255,.08).
+Report the old vs new hex values. CSS-only, no other changes.
+```
+注:空状态看不出真效果,真正验收要看有内容/diff 时 → 尽快推进 Phase 2。
+
+---
+
 ## 你可能要回答 AI 的问题
 
 它做完 PHASE 0 排查后,可能会问你:
