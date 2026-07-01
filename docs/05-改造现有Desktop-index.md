@@ -897,6 +897,23 @@ Fix the unified-diff parser so the @@ marker isn't duplicated. Frontend-only.
 
 ---
 
+## 澄清:commit 信息框 + Decline 已验证
+
+"Apply selected AI Studio changes" 不是标签,是 **commit message 输入框的默认文字**,
+可编辑/替换(如 git commit 的默认信息)。删掉后显示占位 "Commit message"。正常行为,非 bug。
+
+Decline 已验证成功:System 显示 `Rolled back file change: ...test.py` —— rollbackChangeFile 真回滚了。
+
+可选 UX 改进(默认信息改成灰色占位,减少误解):
+```text
+Minor UX: in the commit message box, "Apply selected AI Studio changes" should be a
+grey PLACEHOLDER (not pre-filled editable text). If the user leaves it empty, commit
+with that default message. Frontend-only.
+```
+还差:点 Accept + Commit selected 填信息提交,看 git log 有真提交 → Commit 也验证完 → Phase 2 100%。
+
+---
+
 ## 你可能要回答 AI 的问题
 
 它做完 PHASE 0 排查后,可能会问你:
