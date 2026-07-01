@@ -20,6 +20,7 @@
 | [docs/02-如何实施.md](docs/02-如何实施.md) | 实施指南：建项目、放令牌、发开场白、分步施工（照着做即可）|
 | [docs/04-融合指令.md](docs/04-融合指令.md) | 融合指令：让 AI 把这套界面接进现有软件（含可复制的完整指令）|
 | [docs/05-改造现有Desktop-index.md](docs/05-改造现有Desktop-index.md) | ★ 改造 HSBC AI Studio Desktop 的 index.html（Qt+bridge 真实场景，给自家 AI 的 prompt）|
+| [docs/06-剩余清单.md](docs/06-剩余清单.md) | 剩余清单：进度 + 待办（A 收尾 / B Phase3 / C 暂缓待后端）|
 | [docs/design-system.md](docs/design-system.md) | 设计系统：颜色 + 字体 + 间距 + 轻盈感规范（Claude/Codex 风格）|
 | [index.html](index.html) | 纯 HTML 版起步文件：双击即可在浏览器打开（无需 npm）|
 | [styles.css](styles.css) | 纯 HTML 版的设计令牌（= globals.css，供 index.html 引入）|
