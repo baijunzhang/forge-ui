@@ -813,6 +813,33 @@ Step B 本就已完成,回归只是插曲。
 
 ---
 
+## PHASE 2 前端 Step D + E 完成（静态验证通过）
+
+Accept/Decline/勾选框、Commit 消息框+按钮、"1 file" 单复数修复、Decline→rollbackChangeFile、
+Commit→commitChanges、全局 Roll back 兜底保留。验证:node --check ✅、git diff --check ✅、
+静态检查全 True、CSS 括号平衡、单一 maybeRenderDiffReview。中性风(绿增红删/hunk灰/1px/无重阴影)。
+README 测试改动仍在工作区未提交。功能闭环基本完成,仅剩 Step C(并排)可选。
+
+下一步:真实 app 端到端实测(此前均为静态+文字描述)。发这段:
+```text
+Steps D and E are built and statically verified. Now run a REAL end-to-end test in the
+running app:
+
+1. Open the app, view the diff review panel for the README.md "diff UI test" change.
+   Confirm the card shows: checkbox, Accept, Decline, and Commit-selected control.
+2. Test Decline first (clean, no junk commit): decline a throwaway change and confirm
+   rollbackChangeFile actually reverts that one file (git status clean for it).
+3. Test Commit: Accept the README change, tick it, set a message, click Commit selected.
+   Confirm commitChanges returns a hash, success toast shows, and `git log -1` shows it.
+   (If you don't want the test commit, undo after with: git reset --soft HEAD~1.)
+4. Confirm existing features still work: New chat, Refresh, sessions, send, theme toggle,
+   Feature Connections, global Roll back fallback.
+Report results and paste `git log -1` for the commit test.
+```
+在 app 里实际操作时截图。实测通过 → Phase 2 完成 → 可选做 Step C(并排)/ 进 Phase 3。
+
+---
+
 ## 你可能要回答 AI 的问题
 
 它做完 PHASE 0 排查后,可能会问你:
