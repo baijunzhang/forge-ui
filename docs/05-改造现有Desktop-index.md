@@ -879,6 +879,24 @@ Frontend-first; if a backend read is involved, explain before changing it. Repor
 
 ---
 
+## ✅ diff 面板验证成功（test.py 实测）
+
+让它建 test.py 后,绿红 diff 审阅面板正确出现:绿色新增行 `+ print("hello from HSBC")`
+(绿字+淡绿底+`+`槽)、hunk 头灰、每文件卡(名+路径+`+1 −0`+勾选框+Accept+Decline)、
+汇总条 `1 file changed +1 −0`、Commit 消息框+Commit selected、全局 Roll back 兜底、中性风。
+= 完整 Codex 式 diff 审阅面板,显示部分成功。
+
+小瑕疵(可选修):hunk 头显示成 `@@ @@ -0,0 +1 @@`,多了一个 `@@`。
+```text
+Minor: the hunk header shows a doubled "@@ @@" — it should be "@@ -0,0 +1 @@".
+Fix the unified-diff parser so the @@ marker isn't duplicated. Frontend-only.
+```
+
+下一步:真点按钮验证功能——Accept→勾选→填消息→Commit selected(看提示+git 真提交),
+或 Decline(看文件被回滚)。功能也通 → Phase 2 彻底完成。
+
+---
+
 ## 你可能要回答 AI 的问题
 
 它做完 PHASE 0 排查后,可能会问你:
