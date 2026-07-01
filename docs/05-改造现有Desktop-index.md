@@ -690,6 +690,29 @@ Neutral styling. One step at a time; keep app launching; report after each.
 
 ---
 
+## PHASE 2 前端 Step A 完成 → 去重 → Step B
+
+Step A 完成:提取 session_id → 调 getChangeSessionDiffs → 解析 → 中性汇总条
+`<N> files changed +X −Y`;加 `.diff-review-*` 样式;无后端改动;git diff --check 无错;
+只动 frontend/index.html(271+/102−)。
+
+AI 自查发现:在 `desktopUpdateActivity` 附近**重复插入了 `maybeRenderDiffReview`**,
+不破坏功能但会渲染两次,需先清理。→ 批准先去重再进 Step B。
+
+发这段:
+```text
+Good catch. Yes — first remove the duplicate maybeRenderDiffReview insertion so the
+review summary runs EXACTLY ONCE per update path. Confirm there is only one call site
+after cleanup, and app still launches.
+
+Then proceed to STEP B: per-file diff cards in neutral Codex/Claude style — parse the
+unified diff string (+ green, − red, @@ muted, skip ---/+++/diff --git/index lines),
+green/red ONLY on +/− lines, monospace, generous whitespace, 1px subtle borders.
+Frontend-only; keep bridge/IDs/backend untouched. Report after this step.
+```
+
+---
+
 ## 你可能要回答 AI 的问题
 
 它做完 PHASE 0 排查后,可能会问你:
