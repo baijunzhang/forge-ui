@@ -949,6 +949,39 @@ Keep the neutral Codex/Claude look. Report what you changed.
 
 ---
 
+## 目标形态 = Codex/Claude Code 参考图（Step F 右侧 diff 面板）
+
+参考图关键特征 vs 现状:
+| 特征 | Codex 参考 | 现在 |
+|------|-----------|------|
+| diff 位置 | **右侧独立面板**(聊天左/diff 右并排) | 聊天下方 inline |
+| @@ hunk 头 | 不显示 | 显示(去掉) |
+| Accept/Reject | 文件头 ✓/✕ 图标 | 文字按钮 |
+| Commit | 右上角 Commit ▾ | 底部按钮 |
+| 侧边栏 | 文件夹分组 | 平铺 |
+| 运行线程 | 蓝色小圆点 | 无 |
+| 状态行 | ✓ Edited build.py | 无 |
+
+最关键一步:diff 挪到**右侧并排面板**(让它一眼像 Codex)。
+
+### Step F 指令（较大布局改动,先 git 存档,小步做）
+```text
+Target layout: match Codex/Claude Code — chat on the LEFT, the diff review in a
+dedicated RIGHT-SIDE panel (split view), not inline below chat. Frontend-only, keep all
+functionality and bridge calls. First `git add -A && git commit` a checkpoint, then:
+
+1. Move the diff review panel into a resizable right-side pane next to the chat.
+   Top of the pane: "N files changed  +X −Y" summary and a "Commit" button top-right.
+2. Per-file header: filename + "+N −M", with Accept as a check (✓) icon and Decline as
+   an (✕) icon on the right — replace the text buttons. Tooltips: "Keep" / "Discard".
+3. Hide the raw "@@" hunk headers entirely (show a subtle divider between hunks instead).
+4. Keep red/green lines, neutral Codex styling, generous spacing.
+Do it incrementally, keep the app launching, report after each sub-step.
+```
+侧边栏文件夹分组 / 运行小圆点 / 状态行 = Phase 3,之后做。
+
+---
+
 ## 你可能要回答 AI 的问题
 
 它做完 PHASE 0 排查后,可能会问你:
