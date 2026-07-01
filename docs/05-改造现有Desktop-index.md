@@ -501,6 +501,43 @@ CSS/attribute only, no logic changes.
 
 ---
 
+## 排版优化：去"机器感"（字体/行距/字号）
+
+Claude/Codex 舒服的关键在排版,不只在颜色。机器感常见来源:行距太紧、字号偏小、
+字重全一样、默认 Segoe UI、大写标签太硬。
+
+配方:
+| 项 | 做法 |
+|----|------|
+| 字体 | 人文无衬线 Inter(比 Segoe UI 圆润);代码 JetBrains Mono |
+| 行距 | 正文 line-height **1.6**(最关键) |
+| 字号 | 对话 15px / UI 14px / 标签 12px |
+| 字重 | 只用 400 + 500,不用 700 |
+| 大写标签 | 小、灰、letter-spacing .04em |
+
+最见效:**行距 1.6 + 换 Inter**。
+
+### 发这段（纯 CSS）
+```text
+The typography feels robotic. Make it comfortable like Claude/Codex. CSS-only.
+
+1. Font family: use a humanist sans. Add Inter as primary with fallbacks:
+   font-family: "Inter", -apple-system, "Segoe UI", Roboto, sans-serif;
+   Load Inter from Google Fonts if the app has internet; otherwise the fallback
+   is fine. Code/diff font: "JetBrains Mono", Consolas, monospace.
+2. Line-height: body/chat text to 1.6 (this matters most). UI rows ~1.4.
+3. Sizes: chat/message text 15px, general UI 14px, small labels 12px.
+4. Weights: use ONLY 400 and 500. Remove any 600/700 bold; use 500 for emphasis.
+5. All-caps labels (SESSIONS, STUDIO): keep small, muted grey, letter-spacing .04em.
+6. Slightly more vertical spacing between messages and list rows.
+
+No DOM/ID/bridge changes. Report what you changed. Show both themes after.
+```
+注:本地 file:// + QtWebEngine,Inter 需联网从 Google Fonts 加载;内网不通会回退 Segoe UI
+(行距/字号改善仍有效)。要稳可把 Inter 字体文件打包进 app 本地引用。
+
+---
+
 ## 你可能要回答 AI 的问题
 
 它做完 PHASE 0 排查后,可能会问你:
