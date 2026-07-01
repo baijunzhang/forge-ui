@@ -1001,6 +1001,20 @@ Frontend-only; report after.
 
 ---
 
+## Step F 完成（静态验证）→ 待真实截图
+
+全部 True:right pane node/css、top actions css/js、icon buttons、accept tick、decline x、
+hunk hidden、bridge wiring、style balance 0;node/git 检查通过;bridge 接线保留。
+AI 的 ASCII 示意布局对上 Codex:聊天左/diff 右、Commit 右上、README.md +N−M ✓ ✕、
+@@ 换成细分隔线、绿增行。
+
+注意:AI 给的是 ASCII/文字描述,**非真实截图**。必须打开真实 app 眼见为实:
+1. 打开 app → 输入 `创建一个文件 test2.py，内容 print("hi")`
+2. 截图右侧 diff 面板,对比 Codex 参考图。
+前面各步 AI 均为文字描述,实际渲染可能有细节出入,截图是唯一确认视觉到位的方式。
+
+---
+
 ## 你可能要回答 AI 的问题
 
 它做完 PHASE 0 排查后,可能会问你:
