@@ -914,6 +914,41 @@ with that default message. Frontend-only.
 
 ---
 
+## 金融人友好化（去程序员黑话）
+
+产品给金融人用,不能全是开发术语。`@@ -0,0 +1 @@`(hunk 头,git 行号标记)金融人不懂。
+需去黑话:
+| 黑话 | 友好版 |
+|------|--------|
+| `@@ -0,0 +1 @@` | "改动 1" / 细分隔线 / "第 17–20 行" |
+| `Change session: <id>` | "待审阅的改动" |
+| `Validation attempts: ... py -m py_compile ...` | 折叠成 "✓ 已检查" |
+| `+1 −0` | 悬停 "新增 1 行,删除 0 行" |
+| `Commit` | "保存改动" |
+| `Roll back changes` | "撤销全部改动" |
+Accept/Decline 保留,加提示("保留此改动"/"丢弃此改动")。
+
+发这段:
+```text
+This tool is for FINANCE users, not developers. Make the diff review UI friendlier by
+removing developer jargon. Frontend-only, keep all functionality:
+
+1. Hide the raw hunk header "@@ -0,0 +1 @@". Replace with a plain label like
+   "Change 1" (or a subtle divider). Do not show git @@ syntax to the user.
+2. Hide the raw "Change session: <id>" technical id — show "Changes to review" instead.
+3. Collapse the raw validation/shell commands (py -m py_compile, verifier subagent, cd...)
+   into a simple "✓ Checked" line; keep details available on click if easy.
+4. Rename: "Roll back changes" → "Undo all changes"; keep "Commit selected" but relabel
+   to "Save changes". Keep Accept / Decline but add short tooltips ("Keep this change" /
+   "Discard this change").
+5. Show +N/-N with a plain hover: "N lines added, M removed".
+
+Keep the neutral Codex/Claude look. Report what you changed.
+```
+优先级:①去 @@ + 折叠 shell 命令(最像"后台程序")②Commit/Roll back 改名 ③Accept/Decline 提示。
+
+---
+
 ## 你可能要回答 AI 的问题
 
 它做完 PHASE 0 排查后,可能会问你:
