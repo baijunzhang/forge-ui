@@ -367,6 +367,31 @@ CSS/markup swap only. Do not touch bridge, IDs, events, or payloads.
 
 ---
 
+## PHASE 2 启动:排查 diff 数据结构（先查后改）
+
+Phase 1(外观 + 正确 HSBC logo)已完成。Phase 2 = Codex 式 diff + Accept/Decline + Commit,
+要碰后端。第一步让 AI 先排查数据结构,不急着改。发这段:
+```text
+Phase 1 look is done. Now start Phase 2 — the Codex-style diff + Accept/Decline + Commit.
+
+FIRST, investigate and report back (do NOT edit yet):
+1. The exact shape of ChangeSession.diffs — for each changed file, what fields exist?
+   Is it a unified diff string, or old/new content, or per-line records? Show a sample.
+2. The current rollback method signature — is it all-or-nothing, or per-file?
+3. Whether any git commit capability exists anywhere in the Python code.
+
+Then propose (for my approval, before writing):
+- bridge.getChangeSessionDiffs(session_id) to expose the diffs to the frontend.
+- bridge.commitChanges(session_id, paths[]) to git-commit selected files.
+- per-file rollback for "Decline" if rollback is currently all-or-nothing.
+
+Wait for my approval after the report.
+```
+它报告回来后,把 `ChangeSession.diffs` 的样例结构贴出来确认:前端渲染方式 + 后端两个方法签名。
+session 小圆点 / folder 分组(纯前端)等 diff 主体完成后再加。
+
+---
+
 ## 你可能要回答 AI 的问题
 
 它做完 PHASE 0 排查后,可能会问你:
