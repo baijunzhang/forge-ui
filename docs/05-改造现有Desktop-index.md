@@ -583,6 +583,34 @@ Phase 3 开始时**先排查后端发了哪些事件**再决定(同样"先查后
 
 ---
 
+## PHASE 2 后端完成 → 先要样例数据再做前端
+
+后端已完成(只加不改):`change_session.py` + `desktop.py`(147+/2−),py_compile 通过。
+- `getChangeSessionDiffs(session_id)` = `@Slot(str, result=str)` 返回 str(应为 JSON 字符串)
+- commit 逻辑(`session.status="committed"`)
+- 全局 `rollbackChangeSession` 保留不动
+- 前端 diff UI 未开始(正确)
+
+关键:前端渲染完全取决于 `getChangeSessionDiffs` 返回的字符串结构。**做前端前必须先拿样例**。
+发这段:
+```text
+Backend looks good. BEFORE building the frontend, I need to see the real data shape.
+
+1. Run getChangeSessionDiffs on a session that has changes, and paste the RAW return
+   value (the actual JSON/string), so I can design the frontend rendering exactly.
+2. Confirm the final signatures of ALL new methods:
+   - getChangeSessionDiffs(session_id) -> ? (what fields per file? per-line records,
+     or unified diff text?)
+   - commitChanges(session_id, {paths, message}) -> ?
+   - rollbackChangeFile(session_id, path) -> ?  (per-file Decline — was this added?)
+3. Confirm rollbackChangeSession (global) is unchanged.
+
+Do NOT start the frontend yet — just show me the sample output and signatures.
+```
+拿到样例后据此定前端渲染(每文件卡 + 逐行绿红 + Accept/Decline/Commit),一次做对。
+
+---
+
 ## 你可能要回答 AI 的问题
 
 它做完 PHASE 0 排查后,可能会问你:
