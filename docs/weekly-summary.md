@@ -1,6 +1,6 @@
 # Weekly Summary – AI Markets Internship
 
-Two versions of the weekly summary email. **Version 2 is the chosen/final version.**
+Three drafts of the weekly summary email. **Final Draft (below) is the version ready to send to Allen, cc Sarang & Junxing.**
 
 ---
 
@@ -27,6 +27,39 @@ I also shadowed the **Wealth Sales** desk because my assigned project is related
 Project-wise, I met with my mentor **Sarang** and discussed how different AI models should be prompted differently depending on their strengths, speed and reasoning capabilities. This was helpful for thinking about how to design prompts and workflows for the Wealth Sales project. I also worked on the **AI Markets Desktop** project with Junxing, where I assisted with UI design and testing. During testing, I shared several function and UX suggestions, including stronger conversation memory, the ability to quote or reference previous answers, clearer progress indicators for long-running questions, and better controls for stopping, pausing or tracking agentic workflows.
 
 Overall, this week helped me connect the dots between business workflows, user needs and product design. One key takeaway is that AI Markets should not be viewed as a generic chatbot, but as a desk-specific workflow copilot. Each desk has different data, products, risks and pain points, so the most valuable AI use cases are the ones that connect directly into the desk's daily workflow. This also helped me better understand what was mentioned previously about experiencing the full workflow of the business, from production to testing. Through testing the product myself, I realized that product testing is not only about checking whether something works, but also about identifying new user needs and potential improvements.
+
+Best,
+Lisa
+
+---
+
+## Final Draft — plain email, no key takeaway, ready to send
+
+**To:** Allen
+**Cc:** Sarang, Junxing
+**Subject: Weekly Summary – Desk Conversations, AI Markets Opportunities & Project Updates**
+
+Hi Allen,
+
+I wanted to share a brief summary of what I worked on and learned this week.
+
+This week I met with five desks to understand their workflows and where AI Markets could add additional value: FX Options Trading, Collateral Treasury Trading, Flow Credit Trading, Greater China FX Trading, and Wealth Sales.
+
+For **FX Options Trading**, I learned that the desk is highly focused on price making and risk management, with key inputs including implied volatility, smile, gamma, and tenor. The desk wants deeper integration with pricing and risk data for Studio. One specific suggestion was to incorporate a pricing API into Studio so traders can directly access relative smile and gamma data, and further use the AI Markets Studio platform to do the visualizations.
+
+For **Collateral Treasury Trading**, I learned that the desk focuses on funding, repo, stock loans, evergreen repo, collateral optimization, balance sheet usage, and liquidity, with collateral baskets and balance sheet usage as key inputs. The pain point here is that trade booking, validation checks, and collateral information are spread across multiple systems. A particularly useful direction would be connecting two collateral-level APIs for unified collateral information and constraint visibility.
+
+For **Flow Credit Trading**, I learned more about how credit traders think about bonds, credit spreads, coupon, bid-offer, and liquidity. Client relationships remain central here (even for trading) — this isn't purely a systems or data problem. The desk highlighted the usefulness of AI Markets in summarizing earnings reports and industry guidance to support client conversations, which is already achieved.
+
+For **Greater China FX Trading**, I learned that the desk covers spot, NDFs, and FX swaps across HKD, CNY, CNH, etc., with flow-driven PnL coming from spread, volume, and risk-taking. A key pain point they mentioned was that checking counterparty limit availability before trading is manual and time-consuming. One potential AI Markets use case would be a live or end-of-day board showing each counterparty's trading activity and limit usage, auto-flagging those near or above the limit, so can submit ALL approval on time.
+
+I also shadowed the **Wealth Sales** desk, since my assigned project is related to Wealth Sales. The desk focuses on the distribution and design of structured products to clients, and needs AI support tailored to a sales workflow. Market color and support for recurring daily tasks has already been achieved, but sometimes the Studio function is not that smooth — for example, when using the connectivity to HSBC Investment Research reports, it can only read the very front of the paper instead of the whole content (possibly due to research's own grant/API constraints).
+
+Project-wise, I met with my mentor **Sarang** and discussed how different AI models need to be prompted differently based on their strengths and reasoning capabilities — a great preliminary step for designing prompts/workflows for the AI Studio project related to the Wealth Sales desk. I also learned more about structured products, and we will dive deeper into prompting through hands-on work in AI Markets Studio to build upon the project.
+
+I also worked on the **AI Markets Desktop** project with Junxing, where I assisted with the UI design and testing of the desktop. I shared suggestions based on hands-on use, such as (1) adding conversation memory, (2) allowing users to quote or reference a previous answer to continue from that specific point in the same chat, and (3) adding a progress indicator for each task, and flagged several function and UI limitations, suggesting more user-friendly functions.
+
+Next week, I plan to continue networking with more desks, as well as with senior management, to keep building a broader view of the business.
 
 Best,
 Lisa
