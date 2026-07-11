@@ -406,3 +406,33 @@
   verification before the next piece.
   ```
 
+### 第二小步已提交:关键的"按 session 过滤事件"机制(真机截图确认)
+
+- **Commit**:`72f7b50 thread session path through foreground events`
+- **改动内容**:几乎所有更新聊天界面的后端事件(`desktopSetRunning`/
+  `desktopAppendMessage`/`desktopStartAssistant`/`desktopAppendActivity`/
+  `desktopUpdateActivity`/`desktopAppendAssistantDelta`/`desktopAppendReasoningDelta`/
+  `desktopToolStart`/`desktopToolEnd`/`desktopFinalizeAssistant`/
+  `desktopLoadConversation`)现在都统一带上 `session_path`;加了
+  `current_session_path_text()`/`with_current_session_path(payload)` 两个后端
+  helper。**关键的一点**:前端事件处理器现在会**忽略不属于当前正在看的 session 的
+  事件**——这正是之前那次"跨 session 内容串台"bug 的根本解药,以前不管事件属于哪个
+  session 都会往当前界面贴,现在有了按 session 过滤的机制。
+- 依然克制:**并发上限还是锁在 1**,这一步纯粹是打地基,没有开真并发。
+- 自检:`py_compile` 通过、`git diff --check` 通过,主动停下等真机验证。
+
+  真机验证清单(自己测):
+  ```text
+  1. Normal prompt streams correctly.
+  2. Thinking/tool cards still render in the active session.
+  3. Stop still works.
+  4. Loading/switching sessions still works.
+  5. No blank/missing final assistant message after completion.
+  ```
+
+  验证通过后发这段继续:
+  ```text
+  Live check passed, no regressions. Proceed with the next small committed piece, same
+  discipline as before — commit, then stop for my live verification.
+  ```
+
