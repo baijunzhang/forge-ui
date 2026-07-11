@@ -964,3 +964,33 @@ session_path = DESKTOP_SESSIONS_DIR / f"session_{time.strftime('%Y%m%d_%H%M%S')}
 
 > **用户偏好(记录)**:从这次开始,凡是整理好的指令/诊断记录,直接 push,不用再问
 > "要不要 push"。
+
+### 两个之前的修复都被代码级证据确认真的生效了(真机截图确认)
+
+- **Outlook 文件夹选择确认生效**:`OutlookListMessages` 这次用了真实、具体的
+  `folder_id`(一长串 Outlook 内部 ID),没有走旧的通用 `OutlookListInboxMessages`
+  fallback——之前批准的"文件夹选择器 UI + 注入 connector context"链路真的打通了。
+- **悬空工具调用修复在真实失败场景下也扛住了**:`OutlookGetMessage`(拉正文)这次
+  真的报了 Outlook COM 异常(`Error executing OutlookGetMessage: (-2147352567,
+  'Exception occurred.'...)`),但失败被正确记录成合法的 `role: "tool"` 消息,没有
+  再留下悬空调用、没有污染 session——`ac69a2d` 那次修复在真实报错场景下也是稳的。
+- **剩下两点**:①可能需要重启 app,让最新的"活动卡片原地更新"代码真正生效,再重新
+  确认骨架屏堆积是不是因此消失;②`OutlookGetMessage` 对每封邮件都拉完整正文有点
+  "贪心",部分因 COM 异常失败,可以考虑后续优化成"metadata 不够用才拉正文"。
+
+  指令(发给 AI):
+  ```text
+  Great verification — both fixes confirmed with real evidence. Next:
+
+  1. Restart the desktop app to ensure the latest activity-card update-in-place code is
+     actually running, then re-check whether the stuck-loading pile still appears on a
+     brand-new task run (not the old vjg/bkakS sessions).
+  2. Create one more fresh task, explicitly pick a DIFFERENT non-Inbox folder in the new
+     picker UI, and confirm the resulting folder_id in the tool call matches that specific
+     folder (not just re-confirming Inbox-adjacent behavior).
+  3. Not urgent, but worth a follow-up later: consider limiting the OutlookGetMessage
+     fan-out — e.g. only fetch full message bodies for a capped number of "likely
+     important" emails (per the priority/action classification it already does), relying
+     on list metadata for the rest, to reduce COM call volume and partial failures. Report
+     your thoughts on scope, don't implement yet.
+  ```
