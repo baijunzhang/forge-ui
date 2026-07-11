@@ -1020,3 +1020,48 @@ session_path = DESKTOP_SESSIONS_DIR / f"session_{time.strftime('%Y%m%d_%H%M%S')}
   I'll separately run the non-Inbox folder manual verification steps myself and report
   the result.
   ```
+
+### 目标场景:"连 Bloomberg Terminal,总结昨天10条重要新闻,每天7点发到指定邮箱"
+
+- 用户提出了一个具体的目标使用场景,想确认现在能不能做到。拆解后现状:
+  - ✅ 每天固定时间触发——已验证能用
+  - ✅ 总结/筛选"重要"的判断能力——大概率能用,参考 Outlook 邮件总结时的优先级判断
+    质量还不错,逻辑应该能迁移到新闻场景
+  - ❌ **连接 Bloomberg Terminal 读取新闻**——还没做,上次(见前文 P26 后半段那次)
+    只是让它去调研 BBG/IB Chat connector 需要什么配置、给方案,还没批准实现,流程上
+    停在"调研"这一步
+  - ❌ **主动发邮件出去(不是读邮件)**——目前所有 Outlook 相关工作都是"读"(列邮件、
+    拿正文),从没验证过"发邮件"这个能力存不存在。这是全新的、独立的缺口,而且是个
+    有真实后果的动作(发错内容、发错人都是问题),需要单独调查 + 认真考虑安全机制,
+    不能像"读邮件"那样直接自动化。
+
+  指令(发给 AI):
+  ```text
+  STEP — Investigate whether "send an outbound email" capability exists anywhere in
+  this app (interactive session or scheduled), before building anything for Bloomberg.
+
+  1. Does ANY existing code path let the agent compose and SEND an email via Outlook
+     (not just list/read messages)? Search for it in both the interactive session tools
+     and anything scheduled-task-specific. If it exists, report where and how it's
+     invoked, and whether it could be reused for scheduled tasks.
+  2. If it does NOT exist: report what would be needed to build it — Outlook COM has
+     MailItem creation + Send() APIs, similar in complexity to the existing
+     OutlookListMessages/OutlookGetMessage integration. Propose a schema (recipient(s),
+     subject, body, similar to how outlook_mail connector context was designed).
+  3. IMPORTANT — safety consideration: sending an email is a consequential, hard-to-
+     undo action, unlike reading. For an UNATTENDED scheduled run specifically (no human
+     present to catch a mistake), what safeguards should exist before this is safe to
+     use — e.g. should the first several scheduled runs require a one-time manual
+     approval of the drafted email before it's actually sent (similar to the permission-
+     dialog pattern already used elsewhere), or should sending always be restricted to a
+     pre-approved fixed recipient list set at task-creation time (not dynamically decided
+     by the model)? Give your recommendation, don't implement yet — this needs explicit
+     approval given the risk, same as concurrency (P26) and the Outlook connector needed.
+
+  Report findings for both the capability check and the safety design, then wait for
+  approval before building anything.
+  ```
+
+  另外提醒:BBG/IB Chat connector 的调研请求在更早之前(见 P26 后段那次)已经发过,
+  还没看到它的回报——如果还没收到回复,可以再问一次进度,或者跟这次的"发邮件能力"调研
+  一起处理,两者都是"新场景要用,但还没走完调研→批准→实现"这个流程的项目。
