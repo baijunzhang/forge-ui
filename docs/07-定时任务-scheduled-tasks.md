@@ -764,3 +764,53 @@ session_path = DESKTOP_SESSIONS_DIR / f"session_{time.strftime('%Y%m%d_%H%M%S')}
 
   Verify all three live, in both light and dark themes.
   ```
+
+### 真正的根因找到了(真机截图确认,有具体报错文字,不再是空白/骨架屏)
+
+- 真实报错:
+  ```
+  [stream error 500] LLM call failed: Error code: 400 - {'error': {'message': 'No tool
+  output found for function call [id].', 'type': 'invalid_request_error', ...}}
+  ```
+- 诊断:定时任务调用 Outlook 邮件工具时,**工具的执行结果没有被正确追加回发给 LLM 的
+  对话历史里**,留下一个"悬空"的工具调用记录。这**永久损坏了这一个 session 的历史**——
+  之后这个 session 里任何后续消息(哪怕跟 Outlook 完全无关,比如"hiii")都会报同一个错,
+  因为每次都要把这个已经坏掉的历史重新发给 API。
+- **关键验证**:用户确认新开一个 session 是正常的,说明问题只出在"定时 worker 调用
+  Outlook 工具时构建消息历史"这条路径上,不是全局性的崩溃。
+- 大概率是因为 Outlook connector 是最近才加到定时任务里的新功能,这条"把工具结果写回
+  历史"的路径没有被测试到/没写对。
+
+  指令(发给 AI):
+  ```text
+  Found the real root cause via a real error message (not silent failure this time):
+
+  [stream error 500] LLM call failed: Error code: 400 - {'error': {'message': 'No tool
+  output found for function call [id].', 'type': 'invalid_request_error', ...}}
+
+  Diagnosis: when the scheduled task calls the Outlook mail tool, the tool's result is
+  NOT being correctly appended back into the conversation history sent to the LLM API,
+  leaving a dangling/unmatched function call. This permanently corrupts THAT session's
+  history — every subsequent message in the SAME session (even an unrelated one like
+  "hiii") fails with the identical error, because the broken history gets resent every
+  time. Confirmed: a brand new session works fine, so this is specific to how the
+  scheduled worker's Outlook tool-call path builds message history, not a global break.
+
+  Please:
+  1. Trace exactly where the scheduled worker calls an Outlook tool and where (if at all)
+     it appends the tool's result back into the message history. Find why it's being
+     skipped or malformed — e.g. an exception in the Outlook call being swallowed before
+     the result-append step, or the result being appended in the wrong format/position.
+  2. Fix so tool results are always correctly appended, whether the tool call succeeds or
+     fails (a failed tool call should still produce a valid "tool result" message saying
+     it failed, never leave a dangling function call).
+  3. Add a safeguard: if a tool result genuinely can't be recorded, do NOT mark the run
+     "Final"/successful — surface a clear error immediately instead of silently leaving
+     the session in a state that poisons all future messages in it.
+  4. Separately: is there a way to recover the ALREADY-corrupted "bkakS" session, or does
+     the user just need to delete it and start over? Tell me which.
+
+  Verify by re-running the same Outlook test task and confirming: the tool result gets
+  recorded correctly, the run completes with real content (not stuck), and a follow-up
+  message in that same session works normally afterward.
+  ```
