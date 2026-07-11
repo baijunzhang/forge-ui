@@ -814,3 +814,48 @@ session_path = DESKTOP_SESSIONS_DIR / f"session_{time.strftime('%Y%m%d_%H%M%S')}
   recorded correctly, the run completes with real content (not stuck), and a follow-up
   message in that same session works normally afterward.
   ```
+
+### 修复已落地(commit ac69a2d)+ 发现更根本的新问题:定时任务运行时整个 app 锁死
+
+- **好消息**:`ac69a2d prevent dangling tool results` 已经修好了悬空工具调用的问题——
+  `agent.py` 捕获工具异常并返回合法结果字符串;`desktop.py` 定时任务收尾时检测未匹配的
+  工具调用,标记失败而不是误报成功;确认了 Outlook COM 本身能正常访问(排除线程安全
+  假设)。建议直接删除损坏的 `bkakS` session 重跑,不用修复。
+- **新问题(更根本)**:真机截图确认,定时任务(`vjg`)运行期间,系统消息明确显示
+  "A scheduled task is running in the background. Please wait for it to finish before
+  starting another prompt."——**整个 app 在定时任务运行时会锁死,任何其他 session 都
+  发不了消息**。这是"定时任务只在没有其他 session 在跑时才触发"这个安全设计反过来的
+  代价,本质上跟 P26 多 session 并发是同一个地基问题。
+- **新功能需求**:除了 Outlook mail,还要给定时任务加 **BBG(Bloomberg)** 和
+  **IB Chat(Instant Bloomberg)** 连接器,复用 Outlook 那次建立的 connector 模式。
+
+  指令(发给 AI):
+  ```text
+  Good fix on the dangling tool call issue. Two things now:
+
+  1. INVESTIGATE the "vjg" run that's showing many stacked loading rows without
+     completing: is this a genuine long multi-step tool-call sequence (Outlook +
+     summarization = several calls, just slow), or a new infinite-loop/retry bug?
+     Give code-level evidence, don't guess.
+
+  2. CRITICAL DESIGN ISSUE: while a scheduled task runs, the ENTIRE app blocks ALL other
+     sessions from accepting new prompts ("A scheduled task is running in the
+     background. Please wait..."). This defeats the purpose of a background/unattended
+     task feature — the user should be able to keep using other sessions while a
+     scheduled task runs. Report: is this blocking necessary because of the same
+     single-worker architecture flagged in P26 (i.e. genuinely can't be fixed without
+     full per-session concurrency), or is there a smaller, scoped fix — e.g. scheduled
+     tasks specifically should never block the user's own interactive sessions, even if
+     scheduled tasks can't run concurrently with EACH OTHER yet? Don't implement yet,
+     just report which is true and what the smallest safe fix would look like.
+
+  3. NEW FEATURE: add BBG (Bloomberg) and IB Chat (Instant Bloomberg) as additional
+     connector options for scheduled tasks, reusing the exact same connector-context
+     pattern established for Outlook mail (the schema with connectors list + per-
+     connector config fields, saved with the task, injected into run_config at
+     execution time). Investigate what config each needs (e.g. BBG likely needs
+     ticker/field selections similar to the BloombergBDP/BDH/etc conventions already
+     used elsewhere in this app; IB Chat likely needs a room/contact identifier) before
+     implementing — report your findings and a proposed schema first, wait for approval
+     before building.
+  ```
