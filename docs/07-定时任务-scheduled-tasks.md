@@ -994,3 +994,29 @@ session_path = DESKTOP_SESSIONS_DIR / f"session_{time.strftime('%Y%m%d_%H%M%S')}
      on list metadata for the rest, to reduce COM call volume and partial failures. Report
      your thoughts on scope, don't implement yet.
   ```
+
+### 非 Inbox 文件夹手动验证步骤 + fan-out 方案批准(真机截图确认)
+
+- **手动验证步骤(它给的,给不了真机 GUI 验证,列步骤让用户自己测)**:新建任务选一个
+  非 Inbox 文件夹 → 打开生成的 session JSON → 检查 `state.messages[0].content` 是否
+  含注入的 `[Scheduled Outlook folder]` 上下文 → 检查第一个邮件工具调用是不是
+  `OutlookListMessages`(不是 `OutlookListInboxMessages`)→ 检查工具调用里的
+  `folder_id` 是否匹配选的那个文件夹。
+- **fan-out 方案(三选一,它自己也建议 Option B)**:
+  - Option A:纯 prompt 引导"只对 3-5 封可能重要的邮件拉正文",代码改动小,但模型
+    可能还是会过度调用
+  - **Option B(采纳)**:加 `scheduled_outlook_mail.max_full_message_fetches` 配置
+    上限(比如 5),在工具层强制执行,可预测、够用
+  - Option C:专门做一个后端 helper(列邮件→本地打分→只拉 top N 正文→返回精简
+    payload),可靠性最好但实现工作量大,等 Outlook 定时摘要变成核心功能再考虑
+
+  批准指令(发给 AI):
+  ```text
+  Agreed: implement Option B — add scheduled_outlook_mail.max_full_message_fetches
+  (default 5) to run config, enforce it at the tool/agent layer (not just prompt
+  guidance) so it's a real predictable cap, not just a suggestion the model might
+  ignore. Work incrementally, commit and verify live before considering it done.
+
+  I'll separately run the non-Inbox folder manual verification steps myself and report
+  the result.
+  ```
