@@ -712,3 +712,55 @@ session_path = DESKTOP_SESSIONS_DIR / f"session_{time.strftime('%Y%m%d_%H%M%S')}
   Work incrementally, commit after the skeleton fix and separately after the Outlook
   context fix, verify each live before moving to the next.
   ```
+
+### 真机测试:又一次运行失败(新失败模式)+ 发现设计缺陷 + UI 还是没修好(真机截图确认)
+
+- **新失败模式**:这次用 Outlook 测试 prompt,触发后几乎完全空白,连报错都没有——跟之前
+  "至少有部分文本+卡骨架屏"不一样,可能是 Outlook COM 在定时任务的后台 worker 线程里
+  访问不了(呼应最早 P26 调查阶段就提过的"Desktop COM API 线程安全"风险)。
+- **设计缺陷**:用户发现测试 prompt 里必须显式写"at the scheduled time"才像是"有效"的
+  定时任务——但触发时机应该完全由 Date/time + Recurrence 这些设置决定,不该依赖用户在
+  prompt 文字里手写措辞。需要确认 P42 那次"无人值守"提示是不是真的对所有定时任务自动
+  注入,而不是要求用户自己写触发相关的话。
+- **UI 依然没修好**:P39、P40 两次尝试修 Enabled 那行文字断成两截的问题都没修干净,这次
+  给了 Codex 单任务详情页的参考截图(Status 区块 + Details 区块 + Previous runs 区块的
+  清晰分层),不再继续在原表单结构里打补丁,直接照这个结构重做。
+
+  指令(发给 AI):
+  ```text
+  Three things:
+
+  1. RE-DIAGNOSE this new failure honestly: the Outlook test task fired but the session
+     shows almost nothing — not even an error, just blank. This is different from the
+     earlier skeleton bug. Check whether Outlook COM access is failing silently inside
+     the scheduled task's background worker thread (COM objects are often not safe to
+     access from arbitrary threads without proper apartment initialization — this was
+     flagged as a risk back in the original P26 investigation). Give code-level evidence,
+     and if it's silently swallowing an exception, surface that error instead of leaving
+     the session blank.
+
+  2. DESIGN QUESTION: does the "this is an unattended scheduled run, make assumptions
+     and don't ask for clarification" instruction (from P42) get injected automatically
+     into EVERY scheduled task's prompt at execution time, regardless of what the user
+     wrote? Or does it only apply if the user's own prompt happens to reference
+     scheduling/timing? The trigger timing must be fully controlled by the Date/time and
+     Recurrence settings — the user should never need to write phrases like "at the
+     scheduled time" in their own prompt for the task to behave correctly as unattended.
+     Confirm this is injected server-side unconditionally, and fix it if it isn't.
+
+  3. REDESIGN the scheduled task detail/edit view to match this structure instead of
+     patching the current form layout again (P39/P40 already failed twice on the
+     Enabled row specifically):
+     - A "Status" block: Active/Paused state, Next run time, Last ran time.
+     - A "Details" block: Target folder, Connector context, Permissions, Mode,
+       Recurrence — each as a clean label+value row.
+     - A "Previous runs" section at the bottom, clearly labeled, showing "No runs yet"
+       as its own empty state when there's nothing (not floating unattached).
+     - The editable fields (Name, Prompt, Enabled toggle) stay editable, but the
+       Enabled control specifically must be: [toggle] "Enabled" on one line, with the
+       explanation text as a separate line directly below it in the same helper-text
+       style used everywhere else in the app — verify this specific row renders as ONE
+       clean paragraph, not two disconnected fragments, before moving on.
+
+  Verify all three live, in both light and dark themes.
+  ```
