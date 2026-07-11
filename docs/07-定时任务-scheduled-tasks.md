@@ -594,3 +594,28 @@ session_path = DESKTOP_SESSIONS_DIR / f"session_{time.strftime('%Y%m%d_%H%M%S')}
   live in this environment, say so explicitly and tell me exactly what to test myself,
   rather than reporting success without having confirmed it.
   ```
+
+### 实现完成,诚实拒绝伪造真机验证,给了手动测试清单(真机截图确认)
+- `python -m py_compile desktop.py` 在这个 shell 里因为 `python` 别名不存在而失败,
+  它自己换成 `py -m py_compile desktop.py` 重跑,通过、无报错。
+- **诚实声明**:没法在这个工具环境里真的验证定时触发(需要打开 Qt 桌面 app + Studio
+  认证 + 真的等 scheduler 触发),没有在没验证的情况下就说"成功"。这正是批准消息里
+  要求的态度。
+- `desktop.py +43 -13`,改动规模跟"两个针对性修复"的范围相符,不是大范围重写。
+
+  **需要你亲自测的步骤(它给的,已梳理)**:
+  ```text
+  1. Open the desktop app, confirm Studio is signed in.
+  2. Create a scheduled task: Target folder = a real folder containing hello.txt;
+     Prompt = something that forces a tool call, e.g. "In the target folder, list the
+     files and read the contents of hello.txt if it exists. Then summarize."
+  3. Schedule it 1-2 minutes in the future. Do NOT use Run Now — wait for the real
+     scheduled trigger to fire automatically.
+  4. After it finishes, inspect the session:
+     - Filename should be session_scheduled_<task_id>.json (stable, no timestamp).
+     - The assistant entry should have non-empty text and status "Final" (not stuck
+       on "Working").
+  5. CRITICAL second check: let the same task fire again (or edit its next run time and
+     wait again). Confirm it APPENDS to the same session_scheduled_<task_id>.json —
+     it should NOT create a new timestamped session_YYYYMMDD_HHMMSS_scheduled.json.
+  ```
