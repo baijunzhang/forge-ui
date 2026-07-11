@@ -859,3 +859,40 @@ session_path = DESKTOP_SESSIONS_DIR / f"session_{time.strftime('%Y%m%d_%H%M%S')}
      implementing — report your findings and a proposed schema first, wait for approval
      before building.
   ```
+
+### 真实进展:第一次真正生成了有意义的内容,但发现两个新问题(真机截图确认)
+
+- **好消息**:这次真的输出了具体、有意义的内容(邮件摘要,含真实 subject/sender/要点),
+  说明"悬空工具调用"修复生效了,P42 的"做假设并继续执行"行为也生效了(自己说了
+  "Assumption: you meant your Inbox")。这是目前为止第一次端到端产出真实结果。
+- **问题1:没用用户选的文件夹**——它自己说"只能访问到 Inbox",说明 Outlook 邮件文件夹
+  (跟本地文件系统的 Target folder 不是一回事)大概率**没有真正的 UI 选择入口**,之前
+  设计的 `mail_folder_id` 字段可能只存在于数据结构里,没有对应的表单控件让用户填,所以
+  永远传不进真实值。
+- **问题2:给出正确答案后,还在继续堆骨架屏**——截图2显示,已经产出正确摘要之后,后面
+  还有一长串卡住的骨架屏行,说明这次运行**没有在给出好答案后正常收尾**,还在继续尝试
+  调用更多工具(可能在重复检查、或陷入某种循环),这些后续尝试又卡住了。这解释了之前
+  "vjg 运行很久、堆了很多框"的真正原因。
+
+  指令(发给 AI):
+  ```text
+  Real progress — this run actually produced a meaningful summary with real email
+  content for the first time. But two new issues:
+
+  1. The response says "Assumption: you meant your Inbox, since that's the folder I
+     could access here" — meaning it could NOT access whatever specific Outlook mail
+     folder context was configured. Investigate: does the scheduled task form/connector-
+     context UI actually have a way for the user to pick a SPECIFIC Outlook mail folder
+     (not just the local-filesystem Target folder), or does the mail_folder_id concept
+     only exist in the backend schema with no UI control to set it? If there's no UI for
+     it yet, report that clearly and propose one before building it.
+
+  2. AFTER producing the correct summary, the run kept generating many more stuck-
+     loading entries instead of finalizing. Trace why: is it re-attempting more tool
+     calls after already having a valid answer (e.g. retrying other folders, or looping
+     on something), and why do THOSE subsequent attempts get stuck instead of either
+     completing or being cut off? A run should stop cleanly once it has produced its
+     final answer, not keep generating open-ended stuck placeholders afterward.
+
+  Report findings for both before fixing, then implement.
+  ```
