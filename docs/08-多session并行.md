@@ -335,3 +335,43 @@
   side that may have incidentally helped or need to be reconciled with this).
   ```
 
+### 重新自查结果:诚实承认现在其实还是全局并发(真机截图确认)
+
+- **核心结论**:"current foreground concurrency is global/single-flight, not truly
+  per-session"——目前的并发本质上还是全局的、排队执行的,不是真的按 session 隔离。
+  说明之前那次 SessionRuntime 重构很可能没有真正落地到底,或者被定时任务那条线打断后
+  没接续完。
+- **关键新发现**:工作是在 `AgentWorker(QThread)` 里调用**同步**的 `agent.run(...)`——
+  这解释了之前"定时任务运行时整个 app 锁死"的现象:哪怕挪到了单独线程,本质上还是
+  一次只能跑一个。
+- **具体证据(带精确行号)**:后端全局 worker(`desktop.py:1561`,启动/停止/清理各有
+  对应行号)、前端全局运行状态(`frontend/src/main.js` 多处)、Provider client 虽然
+  按请求创建,但 app 的 state/config/cwd/工具变更目前不安全支持多个前台 session 同时
+  跑。
+- **提出的方案**:按 session_path 建立独立运行上下文、全局 worker/state 换成 map、
+  每个后端事件带 session_path、前端维护正在运行的 session 集合。**务实的收窄范围**:
+  第一版并发上限设为 2,且**只对不修改文件的安全任务开放并发**,涉及文件写入的任务
+  先不并行,等 workspace/工具锁做好再说。
+- 已写了完整方案到 `.nano_claude\plans\default.md`,用了 Plan Mode,没有直接改代码,
+  明确等批准。
+
+  指令(发给 AI):
+  ```text
+  Good honest re-audit. Before I approve, please paste the full content of the plan file
+  (C:\Users\45511827\Project\ai-markets-studio-desktop\.nano_claude\plans\default.md)
+  here so I can review the actual detailed plan, not just the summary.
+
+  Also answer: do you know why the earlier SessionRuntime refactor (from before the
+  Scheduled Tasks detour) didn't end up landing, or was it reverted at some point? Just
+  curious for the record, not blocking approval.
+
+  Given this is now confirmed to be a large refactor, and given the track record on this
+  feature (isolated worktree attempts failed twice due to interruptions, in-place patching
+  introduced the chat_entries[-1] bug), I want the same discipline as before:
+  1. Commit a checkpoint before starting.
+  2. Work in small, separately-committed pieces, starting with the safe/non-mutating-only
+     scope you proposed (cap of 2, no file-writing tasks yet).
+  3. Verify each piece live for real before moving to the next.
+  4. Report back with the plan content first — I have not approved implementation yet.
+  ```
+
