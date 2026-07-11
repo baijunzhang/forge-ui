@@ -1065,3 +1065,35 @@ session_path = DESKTOP_SESSIONS_DIR / f"session_{time.strftime('%Y%m%d_%H%M%S')}
   另外提醒:BBG/IB Chat connector 的调研请求在更早之前(见 P26 后段那次)已经发过,
   还没看到它的回报——如果还没收到回复,可以再问一次进度,或者跟这次的"发邮件能力"调研
   一起处理,两者都是"新场景要用,但还没走完调研→批准→实现"这个流程的项目。
+
+### 发邮件能力调研结果:分阶段方案质量很好,批准 Phase 1(真机截图确认)
+
+- **好消息**:app 里已经有现成的 `OutlookCreateEmailDraft` 工具(只是没暴露给定时
+  任务),意味着"只生成草稿不真发"这个 Phase 1 几乎不用造新东西,风险极低。
+- **确认**:app 目前完全没有真正的发送能力("Existing app cannot send email")。
+- **三阶段方案**(体现出真的理解了"发邮件是有真实后果的动作"这个安全考量):
+  - **Phase 1**:定时任务加"Email output mode: Draft only"选项,复用现成的
+    `OutlookCreateEmailDraft`,AI 生成草稿放进 Outlook,用户自己手动检查发送。
+  - **Phase 2(暂不批准)**:真正自动发送,但要求收件人必须是预先批准的固定名单
+    (不是模型临时决定)、限制最大收件人数、默认不加 BCC、留存审计记录、第一次
+    必须人工审核草稿才能开启自动发送、且这些限制**写死在工具层强制执行**,不只是
+    prompt 里说说。
+  - **Phase 3(更远期)**:域名白名单、主题前缀限制、正文模板限制、频率上限、
+    发送后通知。
+  - 结论:"发送不应该做成不受约束的普通工具,尤其对无人值守的定时任务",判断合理。
+
+  批准指令(发给 AI):
+  ```text
+  Excellent, safety-conscious design. Approved: implement Phase 1 ONLY — expose the
+  existing OutlookCreateEmailDraft tool to scheduled tasks via an "Email output mode:
+  Draft only" option. The agent drafts, I review and send manually myself. This is the
+  full scope for now.
+
+  Phase 2 (auto-send) is explicitly NOT approved yet — do not build OutlookSendEmail or
+  any auto-send capability until I've used Phase 1 for a while and separately decide
+  whether I even want fully automated sending versus always reviewing drafts myself
+  (which may end up being my permanent preference for a work email context, not just a
+  temporary stepping stone).
+
+  Work incrementally, commit and verify Phase 1 live before considering it done.
+  ```
