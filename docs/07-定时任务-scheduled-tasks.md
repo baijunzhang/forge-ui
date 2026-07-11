@@ -512,3 +512,65 @@
   用例包括:每日盘前摘要、投资组合监控、财报提醒总结、宏观数据日历、利率汇率商品监控、
   新闻风险监控、每周投资复盘——这些可以作为以后功能设计的参考方向,但**现阶段优先级
   是先把最基础的"触发-执行-反馈"链路真正跑通**,不用急着扩展场景。
+
+---
+
+## 全面自查结果(真机截图确认,质量很高,给了具体代码证据)
+
+### 五维度分类表(它自己给的)
+
+| 环节 | 判定 | 原因 |
+|---|---|---|
+| Trigger(触发器) | 部分能用 | 真实的 QTimer 每 60 秒轮询一次,正确读取 `next_run_at` 并跟 `datetime.now()` 比较。但只在 app 打开时才生效、60 秒轮询粒度、一次只处理一个到期任务,健壮性有限 |
+| Task instruction(任务指令) | 部分能用 | prompt 确实被传给了 `AgentWorker`,但**绕过了普通聊天的 prompt enrichment(增强处理)** |
+| Context(上下文) | 部分能用 | `target_folder`/`permission_mode`/`desktop_mode`/recurrence/enabled-paused 能传到执行层;但附件、quote、已选文件夹、知识库/当前对话上下文都传不过去 |
+| Execution/run(执行) | 部分能用,且是脆弱的独立路径 | worker 真的启动了,但定时执行**完全独立于普通对话的生命周期**;text/最终状态可能被写到错误的 `chat_entries[-1]`,导致 assistant 消息永久卡在骨架屏 |
+| Output/feedback(反馈) | 部分能用 | session 文件、运行历史、toast 通知都存在,但只有在完成流程真正触发时才生效;输出可能是畸形的;每次新建 session 的问题依然存在 |
+
+### 关键发现 1:找到"卡骨架屏"的真正代码 bug
+
+定时任务的 `chat_entries` 一开始是:
+```python
+chat_entries = [..., {"kind": "assistant", "text": "", "status": "Working"}]
+```
+但工具调用(`on_tool_start`)会往列表末尾追加 `"activity"` 类型的条目;而 `on_text()` 和最终状态更新都想当然地认为 `chat_entries[-1]` 永远是 assistant 消息,直接对它做修改。**只要这次运行调用过任何工具,`chat_entries[-1]` 就变成了 activity 条目,文本和完成状态就写错了地方,真正的 assistant 消息永远停在 `text: "", status: "Working"`**——这就是反复看到的"卡骨架屏"现象的根因,定位非常精确。
+
+### 关键发现 2:定时任务走的是完全独立的执行路径
+
+明确回答"定时任务是否连到跟普通对话一样的完成/流式机制":**不是**。它用的是一条独立的 `AgentWorker` 路径,自己维护本地回调和文件快照,没有用普通聊天的 `sendPrompt` 生命周期或正常的 UI 流式处理器。这是所有这些 bug 反复出现的系统性原因——两套平行实现,一套(普通聊天)经过大量实战验证,另一套(定时任务)是仓促搭建、没被真正测过的。
+
+### 关键发现 3:P38 那次"修好了 new-session-per-run"其实没有真的实现
+
+当前代码依然是:
+```python
+session_path = DESKTOP_SESSIONS_DIR / f"session_{time.strftime('%Y%m%d_%H%M%S')}_scheduled.json"
+```
+每次 `start_scheduled_task_run` 都会新建一个 session 文件,标题固定为 `f"Scheduled: {task name}"`。之前的修复被报告为"完成"但实际没有真的做。
+
+### 结论:不是纯前端假货,但确实没真正做好
+
+它自己的总结:"Scheduled Tasks 不只是一个视觉上的 stub,但也确实没有完全工作。触发器和基础的 worker 启动是真实存在的。真正危险的坏掉部分是独立的定时执行/输出路径,尤其是 `chat_entries[-1]` 的处理方式,以及没有接入正常的交互式生命周期。"
+
+### 下一步:先修两个已经诊断清楚的具体 bug,再讨论要不要重构成复用普通聊天管线
+
+  指令(发给 AI):
+  ```text
+  Excellent diagnosis. Please fix these two concrete, well-understood bugs first:
+
+  1. THE chat_entries[-1] BUG: on_text() and the finalization code must not blindly
+     mutate chat_entries[-1]. Instead, track the assistant entry explicitly (e.g. store
+     its index or a reference when it's first created) and always update THAT entry,
+     regardless of how many activity/tool entries get appended after it. Verify by
+     running a scheduled task that actually calls a tool (not a trivial no-tool prompt)
+     and confirming the assistant's response text and final status land correctly, not
+     stuck on "Working".
+
+  2. ACTUALLY implement one-session-per-task with appended run history, replacing the
+     current new-session-per-run behavior (P38 was reported done but never actually was).
+
+  Do these two first, verify both live for real (trigger via schedule, not just Run Now),
+  then report back. After that we'll separately discuss whether the deeper issue —
+  scheduled execution using a completely separate AgentWorker path instead of the same
+  sendPrompt/streaming lifecycle as normal chat — is worth fixing by reusing the normal
+  pipeline, or whether patching the separate path is good enough going forward.
+  ```
