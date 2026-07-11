@@ -665,3 +665,50 @@ session_path = DESKTOP_SESSIONS_DIR / f"session_{time.strftime('%Y%m%d_%H%M%S')}
   什么时候(带时区感知)?续聊还是新建独立任务?只提醒还是要真的执行并汇报结果?"
 - 这些设计思路值得借鉴,但**当前优先级仍是先把核心执行链路(骨架屏卡住、Context
   传递不全)修稳**,不建议现在就做 UI 大改。
+
+### 更细的诊断结果(真机截图确认,用户提到还有部分内容未拍到)
+
+**骨架屏问题:根因换了,不再是 chat_entries[-1]**
+- 现在文本已经正确落地,剩下的卡住大概率是**前端渲染问题**:`renderStoredAssistantFlow`
+  (负责渲染已存 session 里 assistant 文本的函数)没有在渲染完存储文本后明确隐藏"正在
+  输入"指示器或标记流程完成。
+- **给了低成本的验证方法**:直接看最新那个定时 session JSON 里 assistant 的状态字段——
+  是 `Final` 说明问题在前端渲染清理;还是 `Working` 说明后端"保存完成状态"依然没做对。
+
+**Outlook 上下文问题:根因完全定位清楚**
+- 定时任务运行时**不调用 `apply_web_settings()`**,只用当时 `self.config` 里恰好有
+  什么就用什么。
+- 创建表单的 payload 只有 `name/prompt/recurrence/target_folder/permission_mode/
+  desktop_mode/enabled/paused`,**完全没有 connector 相关字段**,所以 AI 不知道该查
+  哪个邮箱/文件夹,只能让用户手动导出。
+- 修复方案分三步:①表单加 connector 上下文字段(给了具体 JSON schema:connectors 列表、
+  outlook 的 mailbox/folder/calendar id、query、date_window);②后端
+  `normalize_scheduled_payload()` 现在会丢弃这些信息,得改成保留;③执行时把这些上下文
+  注入 `run_config`,在 `build_system_prompt()` 之前。
+- 分类为:跟之前审计报告里的 "Context" 缺口是同一类问题,不是骨架屏那个 bug。
+
+  指令(发给 AI):
+  ```text
+  Do the cheap verification first: check the assistant status field in the latest
+  scheduled session's JSON file.
+  - If status is "Final": confirm this is a frontend rendering cleanup bug in
+    renderStoredAssistantFlow (it needs to hide the typing indicator / mark the flow
+    complete after rendering stored assistant text, not just when actively streaming).
+    Fix that specifically.
+  - If status is still "Working": the backend finish/final-save path is still broken —
+    re-diagnose that instead, don't assume it's the frontend.
+
+  Separately, please implement the Outlook/connector context fix as you scoped it:
+  1. Add connector-context fields to the scheduled task form (per your proposed schema).
+  2. Make normalize_scheduled_payload() preserve this instead of discarding it.
+  3. Inject the saved connector context into run_config before build_system_prompt()
+     at execution time.
+
+  Test with: "At the scheduled time, use Outlook mail tools to list the latest 5
+  received messages from my Inbox since yesterday." Expected: scheduled run actually
+  calls Outlook tools (no manual export/forward request), summary lands in the
+  scheduled session, final assistant status is complete.
+
+  Work incrementally, commit after the skeleton fix and separately after the Outlook
+  context fix, verify each live before moving to the next.
+  ```
