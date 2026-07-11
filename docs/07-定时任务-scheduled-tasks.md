@@ -574,3 +574,23 @@ session_path = DESKTOP_SESSIONS_DIR / f"session_{time.strftime('%Y%m%d_%H%M%S')}
   sendPrompt/streaming lifecycle as normal chat — is worth fixing by reusing the normal
   pipeline, or whether patching the separate path is good enough going forward.
   ```
+
+### Plan Mode 进入,方案已出(真机截图确认,尚未动代码,值得肯定)
+- 好现象:它主动进了 Plan Mode(只读模式),理由是"这是非平凡的后端行为改动"。方案
+  内容跟批准范围完全对得上(显式追踪 assistant 条目、稳定的一任务一 session)。也
+  提前声明如果 Studio 认证/运行环境没法真机验证,会明确说清楚,不会谎称测过——延续
+  了 P26 那次学到的诚实态度。"1 changed file: default.md +59 -347" 是 Plan Mode 自己
+  写计划用的文件,不是动了 desktop.py 正式代码,正常。
+
+  批准指令(发给 AI):
+  ```text
+  Approved. Proceed with exactly these two fixes as planned:
+  1. Explicit assistant-entry tracking for scheduled runs (no more chat_entries[-1]).
+  2. Stable one-session-per-task scheduled session file with appended run history.
+
+  Run python -m py_compile desktop.py as a minimum sanity check. Then attempt a real
+  scheduled-trigger verification (not just Run Now) — actually wait for the schedule to
+  fire, not just simulate it. If Studio auth/runtime genuinely prevents you from verifying
+  live in this environment, say so explicitly and tell me exactly what to test myself,
+  rather than reporting success without having confirmed it.
+  ```
