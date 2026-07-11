@@ -896,3 +896,35 @@ session_path = DESKTOP_SESSIONS_DIR / f"session_{time.strftime('%Y%m%d_%H%M%S')}
 
   Report findings for both before fixing, then implement.
   ```
+
+### 骨架屏堆积的真正根因找到并已修复 + Outlook 文件夹方案确认(真机截图确认)
+
+- **问题2 真根因(已修复)**:不是 LLM 一直在生成新内容,而是渲染层 bug——每次工具调用,
+  `on_tool_start()` 新增一张 "running" 活动卡片,`on_tool_end()` **又新增一张独立的
+  "done" 卡片**,而不是找到那张 running 卡片原地更新。多次工具调用就会留下一堆永远
+  停在 "running" 的卡片,正是截图里看到的堆积骨架屏。已改成 `on_tool_end()` 从后往前
+  找同名 running 条目直接更新(`desktop.py +7 -1`)。**注意**:这个修复只对以后的运行
+  生效,已经生成的旧 session JSON 里堆积的条目还在,需要删除旧 session 重新测试。
+- **问题1 方案确认(尚未实现,按要求先报告)**:确认了表单目前只有"启用 Outlook mail/
+  calendar"勾选框,没有真正选具体邮箱/文件夹的地方。给出的方案:加 Outlook-specific
+  的 mailbox/folder selector,建议**复用现有 Outlook drawer 里已有的邮箱/文件夹加载
+  逻辑**(不重新造轮子),字段存进 `connector_context.outlook_mail.{store_id,folder_id,
+  folder_name,folder_path}`,执行时注入 `run_config` 和 prompt context,并让 agent
+  优先用 `OutlookListMessages(store_id, folder_id, ...)` 而不是默认 fallback 到 Inbox。
+
+  批准指令(发给 AI):
+  ```text
+  Good fix on the duplicate activity-card bug — that explains the stuck-loading pile
+  accurately. Understood the old corrupted test sessions still show it; I'll delete those
+  and test fresh.
+
+  Approved: build the Outlook folder picker UI as you scoped it — reuse the existing
+  Outlook drawer's mailbox/folder loading logic/bridge methods rather than building new
+  ones, save the selection into connector_context.outlook_mail.{store_id,folder_id,
+  folder_name,folder_path}, inject it into run_config and the prompt context at execution
+  time, and make the agent prefer OutlookListMessages(store_id, folder_id, ...) over the
+  generic Inbox fallback when this context is present.
+
+  Work incrementally, commit after the UI/save path lands and separately after the
+  execution-time injection lands, verify each live before moving to the next.
+  ```
