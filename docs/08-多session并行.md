@@ -375,3 +375,34 @@
   4. Report back with the plan content first — I have not approved implementation yet.
   ```
 
+### 实现开始,第一小步已提交(真机截图确认,严格按小步走的节奏)
+
+- **Checkpoint commit**:`b5b7917 checkpoint before session concurrency refactor`,
+  纯记录点,没有实际改动。
+- **第一个实现小步**:`9ba7d42 add session-scoped stop compatibility hook`
+  (`desktop.py +20 -3`, `main.js +3 -1`)——加了 `stopSession(session_path)` 后端
+  方法、一个 `runningSessions` 注册表(**并发上限依然写死在 1**,故意还没启用真并发)、
+  启动时按 session path 注册当前 worker、`stop_worker` 改成可按 session path 停止
+  (向后兼容,退化到旧的全局行为)、前端 Stop 按钮改为优先调用 `bridge.stopSession
+  (path)`,没有就退回 `bridge.stop()`。
+- `py -3 -m py_compile desktop.py` 通过。
+- **主动停下来等真机验证**,没有继续下一步——完全符合之前定的"每步都要真机验证再往
+  下走"的规矩。
+
+  真机验证清单(自己测,不用发指令):
+  ```text
+  1. Start a normal session.
+  2. Send a prompt.
+  3. Press Stop.
+  4. Confirm it still stops correctly.
+  5. Confirm no regressions in normal single-session behavior.
+  ```
+
+  验证通过后发这段继续:
+  ```text
+  Live check passed, no regressions. Proceed with the next small committed piece:
+  adding session-path payloads consistently to backend/frontend events, while keeping
+  the concurrency cap at 1. Same discipline — commit, then stop for my live
+  verification before the next piece.
+  ```
+
