@@ -928,3 +928,39 @@ session_path = DESKTOP_SESSIONS_DIR / f"session_{time.strftime('%Y%m%d_%H%M%S')}
   Work incrementally, commit after the UI/save path lands and separately after the
   execution-time injection lands, verify each live before moving to the next.
   ```
+
+### 真机测试:回复内容质量很好,但骨架屏堆积依然存在 + 文件夹选择仍需确认(真机截图确认)
+
+- **好消息**:这次的回复内容质量很高——具体到每封邮件的发件人/时间/类别,还有
+  Quick takeaway 总结和后续建议,格式完整。
+- **骨架屏依然堆积,但很可能是旧数据残留,不是新 bug**:上次修复时已经提醒过"这个修复
+  只对以后的运行生效,旧 session JSON 里堆积的条目还在"。而"同一个任务的每次运行都
+  追加进同一个 session 文件"这个设计,意味着如果这个任务在修复前跑过一次(留下卡住的
+  旧条目),现在修复后再跑,新回复是干净的,但旧条目还留在同一个文件里,叠加显示成
+  "回复完整但下面还有一堆骨架屏"。需要确认这堆骨架屏具体属于哪次 run,并建议用全新
+  的、从未跑过的任务重测,排除历史包袱干扰。
+- **文件夹选择仍需确认**:回复里写的是"in the configured folder"(没有像上次那样明说
+  Inbox),但用户反馈结果没进到选的那个文件夹——需要确认这次测试是不是真的用上了新批准
+  的 Outlook 文件夹选择器 UI,还是这个任务是旧的、还在走 fallback 逻辑。
+
+  指令(发给 AI):
+  ```text
+  Two things to verify, don't assume:
+
+  1. Is the stuck-loading pile below this correct summary actually from THIS run, or is
+     it leftover from an earlier run of the SAME task (before the duplicate-activity-card
+     fix landed)? Since tasks now append all runs into one stable session file, an old
+     run's stuck entries would persist alongside a new clean run's entries in the same
+     session. Check the session JSON's run history/timestamps to confirm which run each
+     stuck entry belongs to. If they're from an old pre-fix run, tell me so I know to
+     test with a brand-new task instead of a reused one.
+
+  2. Was the new Outlook folder picker UI (from the last approved plan) actually used to
+     select a specific folder for this task, or is this task still using the old
+     fallback logic from before that UI existed? If the picker exists now, I'll create a
+     fresh task, explicitly pick a non-Inbox folder, and re-test to confirm it's actually
+     respected — tell me if that UI is ready to test yet.
+  ```
+
+> **用户偏好(记录)**:从这次开始,凡是整理好的指令/诊断记录,直接 push,不用再问
+> "要不要 push"。
