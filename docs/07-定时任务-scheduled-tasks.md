@@ -619,3 +619,49 @@ session_path = DESKTOP_SESSIONS_DIR / f"session_{time.strftime('%Y%m%d_%H%M%S')}
      wait again). Confirm it APPENDS to the same session_scheduled_<task_id>.json —
      it should NOT create a new timestamped session_YYYYMMDD_HHMMSS_scheduled.json.
   ```
+
+### 真机测试:修复只生效了一部分,+ 发现新的深层问题(真机截图确认)
+- **进展**:这次真的生成了实际文本内容("I can do that, but this session doesn't
+  currently have access to your mailbox/folder contents...")——说明 `chat_entries[-1]`
+  写错地方那个 bug **修好了一部分**,文本这次是落在对的条目上的。
+- **但仍未完全修好**:内容末尾还是卡在一条转不完的骨架屏上,说明"标记完成"这一步还有
+  别的地方没接住信号。
+- **新发现的深层问题**:AI 的回复显示,定时任务的 session **没有真实的 Outlook/邮箱
+  数据访问权限**,建议用户手动导出/转发邮件——这对每天自动跑的定时任务完全不现实。
+  跟之前诊断报告里"Context 部分能用:附件/connector 传不到执行层"这条对上了,说明
+  已有的 Outlook mail+Calendar connector 没有被传递给定时任务的执行 session。
+
+  指令(发给 AI):
+  ```text
+  Progress but not fully fixed. Real content NOW renders (e.g. "I can do that, but this
+  session doesn't currently have access to your mailbox/folder contents...") — this
+  confirms the chat_entries[-1] fix partially worked. But the run still ends stuck on a
+  permanent loading skeleton after that text. Please re-diagnose specifically: since text
+  IS landing on the right entry now, what's still failing to mark the run as complete —
+  is it the "Final" status update, a continuation/second turn, or something else? Give
+  code-level evidence again, don't guess.
+
+  Separately, flag this as a related but distinct gap: the response shows the scheduled
+  session has no real access to Outlook/mailbox data (it asks the user to manually
+  export/forward emails), which defeats the purpose of an unattended recurring task. Does
+  the existing Outlook mail+Calendar connector (already used in interactive sessions)
+  get passed through to scheduled runs at all? If not, that's part of the "Context"
+  gap already noted in the audit (attachments/connectors not reaching execution) —
+  report what it would take to fix that too, but don't implement yet, just report.
+  ```
+
+### 参考资料存档:Codex 真实 Scheduled 界面截图(等执行链路稳定后再用于重新设计)
+- **Heartbeat vs Cron 两种类型**:Heartbeat 用于"让同一个对话线程醒来续聊/提醒你"
+  (比如"45分钟后提醒我"、"每周一继续这个话题");Cron 用于"独立的、绑定某个 workspace
+  的周期性任务"(比如"每个工作日检查这个仓库、总结失败的测试")。我们现在只有一种
+  "定时任务"类型,可能同时在做这两件不同的事,是设计别扭的原因之一。
+- **一个定时任务通常需要**:名字、prompt(到点做什么)、schedule(一次性/周期,含
+  时区)、destination(续这个线程 / 本地 workspace / 隔离的 worktree 式运行)、
+  status(active/paused)。"destination"是个我们现在没有的独立概念,跟"Target folder"
+  不是一回事——destination 决定"这次运行发生在哪种上下文里"。
+- **列表页极简**:按 Current / Paused 分组,每条只显示名字 + app 标签 + 下次运行时间的
+  大白话描述("Next run in 2 days · Weekdays at 8:00 AM"),不是一堆原始字段堆在一起。
+- **创建方式是对话式访谈**,不是静态表单——直接问用户:"到点要做什么?一次性还是重复?
+  什么时候(带时区感知)?续聊还是新建独立任务?只提醒还是要真的执行并汇报结果?"
+- 这些设计思路值得借鉴,但**当前优先级仍是先把核心执行链路(骨架屏卡住、Context
+  传递不全)修稳**,不建议现在就做 UI 大改。
