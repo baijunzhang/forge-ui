@@ -1097,3 +1097,89 @@ session_path = DESKTOP_SESSIONS_DIR / f"session_{time.strftime('%Y%m%d_%H%M%S')}
 
   Work incrementally, commit and verify Phase 1 live before considering it done.
   ```
+
+### 参考资料更新:Codex 完整创建流程截图(对话式访谈 + AI 把模糊需求精加工成详细规格)
+
+- 比更早那次(见前文"参考资料存档:Codex 真实 Scheduled 界面截图")的截图更完整、更具体,
+  这次是一个真实的量化研究论文自动摘要案例,覆盖了从"用户提一句模糊需求"到"生成可执行
+  任务详情页"的完整过程。补充/校正之前的归档笔记:
+  - **创建前先访谈,给出了具体措辞**:AI 先问四个问题——要自动化什么、结果发到哪(继续
+    在这个线程 / 独立后台输出)、什么时候跑、是否依赖本机文件/软件/登录状态(决定电脑
+    要不要保持开机)。跟之前归档的思路一致,这次有了可以直接抄的具体话术。
+  - **最有价值的一点,之前没记录到**:AI 不是把用户的话原样套进 prompt 字段就完事,而是
+    主动把一句模糊需求**精加工成一份详细、结构化的任务规格**再交给用户确认。案例里用户
+    只说"想看最新量化论文,最好能复现、能用到 trading strategy 里,每天别重复",AI 展开
+    成了:明确的信息源(arXiv 官方分类 q-fin.PM/ST/TR/GN/CP,可选补充 Semantic
+    Scholar/Papers with Code)、明确的筛选标准(优先有公开代码/数据/完整实验设定的,
+    优先能直接映射到实盘策略的,降低纯理论/无代码的优先级)、**明确的去重逻辑**(在工作
+    目录维护去重记录文件,按 arXiv ID/DOI/标题规范化去重,除非新版本有实质更新才允许
+    重复出现)、明确的输出格式(每天一份中文 Markdown,固定路径命名规则
+    `outputs/xxx/YYYY-MM-DD.md`,固定报告结构),**连"当天没有合适论文也要生成报告说明
+    原因"这种边界情况都写清楚了**。这跟 P42(定时任务不该临时停下来问,该做假设)是互补
+    关系——P42 是"运行时兜底",这次这个是"创建时预防",从源头把 prompt 写具体,能减少
+    P42 兜底机制被触发的次数。
+  - **详情页结构,细节比之前更精确**:主内容区是完整的任务说明文字;右侧栏分三块——
+    "状态"(活跃/下次运行/上次运行时间)、"详情"(运行环境:本地、项目、重复次数、模型/
+    推理档位)、"运行历史记录"(空状态显示"暂无对话")。这跟之前归档笔记里"Status +
+    Details + Previous runs 三段式"的判断一致,这次给了更精确的字段名,可以直接对齐。
+  - **本机依赖的说明话术很清楚**,值得直接抄:"这个自动化是写到你本机目录的,最好运行
+    时电脑开着;如果不想依赖本机开机,可以换成后台/云端任务,但报告就不能直接写本地
+    文件夹了"——把 tradeoff 讲清楚,让用户自己选,而不是替用户决定。
+
+- **时机判断**:上一次归档时(见"参考资料存档"那条)明确写了"当前优先级仍是先把核心
+  执行链路修稳,不建议现在就做 UI 大改"。从这份文档最近几条记录看(骨架屏根因已修复、
+  Outlook 文件夹上下文已确认、fan-out 方案已批准、Email Draft Phase 1 已批准并在推进),
+  核心执行链路已经明显比当时稳定很多。判断现在可以进入"调研 + 出方案"这一步,但不代表
+  立刻大改——延续本文档一贯的节奏,先让 AI 给出具体设计方案,不直接实现,方案里包含
+  改动范围和风险评估后再决定是否批准。
+
+  指令(发给 AI):
+  ```text
+  STEP — Design proposal (do NOT implement yet) for improving the scheduled-task
+  CREATION flow, based on a reference I'm providing. Do not touch the execution engine —
+  this is purely about how a task gets created/specified, which is a separate concern
+  from run-time reliability.
+
+  Reference pattern (from Codex's real scheduled-automation flow):
+  1. A conversational "Create via chat" entry point, as an ADDITION alongside the
+     existing static form (don't remove the form — some users will still want to
+     quick-edit fields directly). This chat flow asks the user, in order: (a) what do
+     you want automated, (b) where should results go — this thread / a separate
+     output location, (c) when should it run, (d) does this depend on local files, a
+     local app, or a logged-in session (which determines whether the user's machine
+     needs to stay on/unlocked for it to work — state this tradeoff plainly, don't
+     decide for them).
+  2. Critically: the AI should not just drop the user's raw one-line answer into the
+     prompt field. It should EXPAND a rough request into a detailed, structured task
+     spec — e.g. turning "summarize my inbox every morning" into a spec naming the
+     exact source/folder, exact filtering/priority criteria, exact dedup logic (if the
+     task is repeated daily, how does it avoid reporting the same thing twice — where
+     is dedup state stored and keyed on what), exact output format and file naming
+     convention, AND explicit fallback behavior for the "nothing qualifies today" case.
+     Show the expanded spec back to the user for confirmation/edits before creating the
+     task. This directly reduces how often the P42 "make a stated assumption at
+     runtime" fallback needs to fire, since ambiguity gets resolved at creation time
+     instead of discovered mid-run.
+  3. Detail page layout: main content area shows the full task spec/description
+     (readable prose, not raw JSON); a right sidebar has three blocks — "Status"
+     (active/paused, next run, last run time), "Details" (run environment: local vs
+     cloud, project/workspace, recurrence, model/reasoning tier), "Run history" (empty
+     state when no runs yet, e.g. "No runs yet").
+
+  Please investigate our current creation flow (the existing form component, how
+  prompt/schedule/connector-context fields are currently collected and validated) and
+  report back:
+  - Feasibility and rough scope of adding a chat-based guided creation flow alongside
+    the existing form (new component? reuses the existing chat/session UI we already
+    have for interactive runs?).
+  - How you'd implement the "expand rough request into structured spec" step — is this
+    a dedicated system prompt fired in a lightweight pre-creation chat turn, and does
+    the resulting spec text become the literal saved `prompt` field for the task?
+  - What changes (if any) the detail-page layout needs to match the Status/Details/Run
+    history structure described above, relative to what exists today.
+  - Risk assessment: what's the smallest safe first slice, and what should be held back
+    for later (mirroring how we phased the email-send capability).
+
+  Do not implement anything yet — report the proposal and wait for approval, same as
+  prior investigate-first items in this doc (BBG connector, send-email capability).
+  ```
