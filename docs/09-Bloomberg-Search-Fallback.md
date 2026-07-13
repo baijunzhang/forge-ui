@@ -2464,3 +2464,211 @@ After investigation, report:
 Do not ask the end user for ticker, ISIN, or CUSIP while Search capability is
 still being diagnosed.
 ```
+
+## 设计收敛:identifier_lookup / security_discovery 两种模式 + 轻量 query-builder 分发(不是 adapter 类)(发给持有实际 Bloomberg 代码库的 AI)
+
+这条是在上一条"先诊断 Search 本身"的基础上,把讨论中定下的方向正式落成实现指令,处于之前
+两个极端之间的折中方案:既不是被撤回的那套通用 resolver + 每资产类别一个 adapter 类的重
+架构,也不是收得过窄、只覆盖债券一种场景的单一条件判断。核心变化:
+
+- **明确两种 Search 模式**,而不是含混共用一套:`identifier_lookup`(名字/ticker/标识符/
+  Field 解析不出来,比如"HSBC"、"AAPL US Equit"、无效 Field)和 `security_discovery`(用户
+  用自然语言约束描述一批证券,不止债券,还包括股票、基金/ETF、利率产品、FX、期权/波动率等
+  例子:"HSBC USD bonds maturing around 2030"、"Hong Kong-listed HSBC shares"、"China
+  high-dividend ETFs"、"US 5–7 year government bonds"、"EURUSD three-month forward"、
+  "AAPL one-month ATM implied volatility")。
+- 用**一个通用 Search 接口** `search_security(mode, query, asset_class, constraints,
+  max_results)`,不是每个资产类别单开一个 adapter 类;`constraints` 是一个通用字典,
+  收纳 company/issuer/asset_class/country/region/market/exchange/currency/
+  maturity_start/maturity_end/tenor/coupon/seniority/sector/strategy/currency_pair/
+  underlying/expiry/strike/delta/moneyness/instrument_type 这些 key,不强制要求全支持。
+- **允许有一个小的 query-builder 分发**(`build_bond_discovery_query()` /
+  `build_equity_discovery_query()` / `build_fund_discovery_query()` /
+  `build_rates_discovery_query()` / `build_fx_discovery_query()` /
+  `build_option_discovery_query()` / `build_generic_discovery_query()`),但明确这是
+  "函数分发",不是"resolver 类 + adapter 类"那套被撤回的架构——只实现当前 Bloomberg
+  connector 能可靠支持的资产类别,支持不了的直接给一句简洁澄清,不硬造标识符。
+- **统一的结果归一化格式**:`{security, name, description, asset_class, metadata}`,
+  资产类别专属的细节(coupon/maturity/seniority、exchange/country、tenor/instrument_type、
+  currency_pair、underlying/expiry/strike/delta/moneyness 等)全部收进 `metadata` 里,
+  不污染顶层结构——这样上层 fallback gateway 处理候选时不需要关心资产类别差异。
+- 同样要求**先只做独立验证**(7 个用例:AAPL lookup、HSBC lookup、HSBC 港股 equity
+  discovery、HSBC USD bond discovery、中国高股息基金 discovery、美国 10Y 利率 discovery、
+  已解析 Security 空观测值不触发 Search),验证过、方案审过之后才接回正常的 agent 工作流。
+  实现前先报告:现有 Bloomberg 服务和 BQL 能可靠支持哪些资产类别、哪些 query builder 真的
+  有必要现在就写、改动面最小的文件是哪些——不批准不动代码。
+
+指令(发给 AI):
+```text
+Please revise the Bloomberg Search capability so it supports security discovery
+beyond bonds, while keeping the existing execution-first workflow and avoiding
+a large resolver/adapter architecture.
+
+The system should support two Search modes:
+
+1. identifier_lookup
+   Used when a security name, ticker, identifier, or field cannot be resolved.
+
+   Examples:
+   - "HSBC"
+   - "Apple stock"
+   - "AAPL US Equit"
+   - an invalid Bloomberg ticker
+
+2. security_discovery
+   Used when the user describes one or more securities using natural-language
+   constraints.
+
+   Examples:
+   - HSBC USD bonds maturing around 2030
+   - Hong Kong-listed HSBC shares
+   - China high-dividend ETFs
+   - US 5–7 year government bonds
+   - EURUSD three-month forward
+   - AAPL one-month ATM implied volatility
+
+Use one common Search interface, for example:
+
+search_security(
+    mode: "identifier_lookup" | "security_discovery",
+    query: str | None = None,
+    asset_class: str | None = None,
+    constraints: dict | None = None,
+    max_results: int = 10
+)
+
+Do not ask the user to supply these parameters. The agent should derive them
+internally from the natural-language request.
+
+Required workflow:
+
+1. Parse the user's natural-language request.
+2. Call the existing Bloomberg function first:
+   BDP / BDH / BDIT / BDIB / BQL.
+3. If successful, return data and continue to visualization.
+4. If there is a structured Security/Field resolution error, use
+   identifier_lookup.
+5. If the request is a security-discovery request, no canonical Security has
+   been resolved, and the first discovery query returns empty, use
+   security_discovery.
+6. Do not retry the original BQL query repeatedly with rewritten descriptions.
+7. Run at most one initial data-function attempt before entering Search fallback.
+8. Return concise candidates and wait for user selection.
+9. Resume the original request after selection while preserving dates, fields,
+   periodicity, overrides, and visualization intent.
+
+Keep Field Search separate and unchanged.
+
+For security_discovery, support a common constraints dictionary. Recognized
+constraint keys may include:
+
+- company
+- issuer
+- asset_class
+- country
+- region
+- market
+- exchange
+- currency
+- maturity_start
+- maturity_end
+- tenor
+- coupon
+- seniority
+- sector
+- strategy
+- currency_pair
+- underlying
+- expiry
+- strike
+- delta
+- moneyness
+- instrument_type
+
+Do not create separate resolver classes or adapter layers.
+
+A small query-builder dispatch is acceptable:
+
+- build_bond_discovery_query()
+- build_equity_discovery_query()
+- build_fund_discovery_query()
+- build_rates_discovery_query()
+- build_fx_discovery_query()
+- build_option_discovery_query()
+- build_generic_discovery_query()
+
+Only implement the asset classes that can be supported reliably with the
+current Bloomberg connector. For unsupported classes, return one concise
+clarification instead of inventing identifiers.
+
+Normalize all Search results into:
+
+{
+  "security": "canonical Bloomberg identifier",
+  "name": "display name",
+  "description": "description",
+  "asset_class": "asset class",
+  "metadata": {}
+}
+
+Asset-specific details should be stored only inside metadata.
+
+Examples:
+
+Equity metadata:
+- exchange
+- country
+- currency
+
+Bond metadata:
+- coupon
+- maturity
+- currency
+- seniority
+
+Rates metadata:
+- country
+- tenor
+- instrument_type
+
+FX metadata:
+- currency_pair
+- tenor
+- instrument_type
+
+Options metadata:
+- underlying
+- expiry
+- strike
+- delta
+- moneyness
+
+Before reconnecting discovery Search to the normal agent workflow, add
+standalone live or mocked validation for:
+
+1. Identifier lookup: "AAPL"
+2. Identifier lookup: "HSBC"
+3. Equity discovery:
+   company = HSBC
+   market = Hong Kong
+4. Bond discovery:
+   issuer = HSBC
+   currency = USD
+   maturity between 2029 and 2031
+5. Fund discovery:
+   region = China
+   strategy = high dividend
+6. Rates discovery:
+   country = United States
+   tenor = 10Y
+7. Resolved canonical Security with empty observations:
+   must not trigger Search
+
+First inspect the current code and report:
+- which asset classes can be reliably supported with the current Bloomberg
+  services and BQL implementation
+- which query builders are actually necessary
+- the smallest files that need modification
+
+Do not modify code until presenting this narrow plan.
+```
