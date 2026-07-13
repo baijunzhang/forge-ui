@@ -2207,3 +2207,107 @@ Implement now, run the relevant tests, and report:
 - the exact new fallback condition
 - remaining live Bloomberg verification needed
 ```
+
+## 真机测试发现新问题:Agent 没有走 Search fallback,而是自己连续重试了 5 次 BQL(真机截图确认,窄方案实现后的首次真机验证)
+
+- **现象**:上一条窄方案实现后拿真机测试,预期是"第一次 BQL 发现结果为空 → 立刻走已有的
+  Security Search fallback → 返回 `selection_required` → 展示候选 → 等用户选"。但实际观察到
+  的是 agent 连续发起了 **5 次** `BloombergBQL` 调用——每次空结果后自己改写 issuer/security
+  的描述文字再试一次 BQL,始终没有触发 `selection_required`,也没有展示 Bloomberg Security
+  Search 候选,最后绕过 Search 直接问用户"能不能提供 ticker、ISIN 或 CUSIP"。
+- **问题定位**:这不是"该不该触发 Search"判断错了,而是控制流层面没有在第一次空结果后就
+  停下来交给 Search——模型把"结果为空"当成了"换个说法再查一次"的信号,而不是"进入既定
+  fallback 流程"的信号,导致本该一次性触发的 Search 被绕过,退化成了模型自己瞎猜 5 轮
+  自然语言变体、猜不出来才甩锅问用户要 ticker/ISIN/CUSIP——这恰恰是这整套 Search fallback
+  机制原本要避免的行为(不该让用户自己提供 Bloomberg 标识符)。
+- 修复要求很聚焦:**第一次 BQL 发现请求为空后就必须停,不允许再用改写过的说法重试 BQL**,
+  直接复用原始的内部 search query(不是让模型重新造一个)进入既有的 Security Search
+  fallback;如果 Search 本身返回零候选,才允许问用户*一个*聚焦的业务澄清问题(问到期日/
+  发行主体/币种/优先级这类有用约束,依然不能直接问 ticker/ISIN/CUSIP)。同时要求实现方
+  报告清楚"之前为什么会连续发 5 次 BQL"的根因,以及这次具体是靠什么控制流改动堵住的。
+
+指令(发给 AI):
+```text
+The live test did not follow the intended workflow.
+
+Observed behavior:
+
+- The agent made five consecutive BloombergBQL calls.
+- After each empty result, it rewrote the issuer/security description and tried
+  BQL again.
+- It did not return `selection_required`.
+- It did not show Bloomberg Security Search candidates.
+- It eventually asked the user to provide a ticker, ISIN, or CUSIP.
+
+This is not the required behavior.
+
+Please make the smallest orchestration change needed.
+
+Required behavior:
+
+1. The agent may make only one initial Bloomberg data-function attempt for this
+   request.
+
+2. For a BQL security-discovery request where:
+
+   - is_security_discovery == true
+   - canonical_security_resolved == false
+   - the first BQL result is empty
+
+   immediately enter the existing Security Search fallback.
+
+3. Do not retry BQL with rewritten issuer names, ticker guesses, or alternative
+   expressions after the first empty discovery result.
+
+4. Reuse the original internal search query, for example:
+
+   "HSBC USD bond 2030"
+
+5. The existing gateway should then:
+
+   - call the existing Bloomberg Security Search
+   - store the original request
+   - return `selection_required`
+   - return concise candidates
+   - stop and wait for the user's selection
+
+6. If Search finds candidates, the user-facing response should contain only a
+   concise choice list. Do not mention the BQL expression, empty tables,
+   internal hints, request ID, or retry attempts.
+
+7. After selection:
+
+   - call BloombergResume
+   - replace only the unresolved Security
+   - preserve the one-month date range, price field, periodicity, overrides,
+     and visualization intent
+   - execute BDH
+   - continue to visualization
+
+8. Only if the actual Bloomberg Security Search itself returns zero candidates
+   may the agent ask one concise clarification question.
+
+   Do not immediately ask the user for ticker, ISIN, or CUSIP. First ask for a
+   useful business constraint such as exact maturity, issuer entity, currency,
+   or seniority.
+
+9. Prevent the agent from issuing additional BloombergBQL calls after:
+
+   - a discovery-empty result, or
+   - a `selection_required` response.
+
+10. Add a focused test that simulates this live request and verifies:
+
+   - BloombergBQL call count == 1
+   - Security Search call count == 1
+   - additional BloombergBQL call count == 0
+   - result status == `selection_required`
+   - original date range and visualization intent are stored
+   - after selection, BloombergResume executes BDH
+
+Do not add new resolver layers or asset-class adapters.
+Do not refactor unrelated code.
+
+After implementing, report exactly why the agent previously issued five BQL
+calls and which instruction or control-flow change now prevents that loop.
+```
