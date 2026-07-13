@@ -1946,3 +1946,60 @@ legitimate empty or N/A results do not incorrectly trigger Search.
   具体 diff 内容,所以这条改动本身是否符合上面存档的所有规则(尤其是刚推翻的语义预判那条)
   还没有核实,只是记录"它确实在往这个方向推进",不代表已验收。下次如果能拿到 `default.md`
   的具体 diff 内容,应该核对它是否已经把"语义预判"相关的措辞从指令文本里删掉了。
+
+## 批准实现:收紧 classifier + 空结果不触发 Search + 隐藏内部步骤(发给持有实际 Bloomberg 代码库的 AI)
+
+对上面 Plan Mode 给出的方案正式批准实现。这条把"严格先执行、后 Search"模型落到具体的
+实现清单上:①收紧 fallback classifier,只有结构化的 Security/Field 解析错误才触发 Search;
+②明确"结果为空/null/N/A/没有观测值"本身不能单独作为触发 Search 的证据(呼应前面"周末/
+假日没有交易"那类合法空结果的场景);③补充具体测试用例(合法空历史区间、合法 Security 但
+Field 是 N/A、周末/假日无观测值都不触发 Search;无效 Security/Field/字段不适用这三种才触发
+对应的 Search);④用户可见的回复要保持简洁,`BloombergInstructions`、错误分类、pending
+request ID、`BloombergResume` 这些内部实现细节除非显式开 debug 模式,否则不能暴露给用户;
+⑤再次重申不加语义预判、不向用户要 Security/Field 参数;⑥保持所有现有函数签名和行为不变。
+
+指令(发给 AI):
+```text
+Approved. Please implement the minimal-change plan now.
+
+The intended workflow is strictly:
+
+natural-language request
+→ select and call BDP / BDH / BDIT / BDIB / BQL first
+→ if successful, return data and continue to visualization
+→ if the Bloomberg response contains a resolvable Security or Field error,
+  trigger Search
+→ show concise candidates
+→ wait for the user's selection
+→ resume the original request
+
+Please complete the remaining work:
+
+1. Tighten the backend fallback classifier so Search is triggered only by
+   structured Security/Field resolution errors.
+
+2. Do not trigger Search solely because the result is empty, null, N/A, or has
+   no observations.
+
+3. Add tests covering:
+   - valid empty historical period: no Search
+   - valid Security with N/A Field value: no Search
+   - weekend/holiday with no observations: no Search
+   - invalid Security: Security Search
+   - invalid Field: Field Search
+   - field not applicable: Field Search
+
+4. Keep the user-facing response concise. Do not expose internal steps such as
+   BloombergInstructions, error classification, pending request IDs, or
+   BloombergResume unless debug mode is enabled.
+
+5. Do not add semantic pre-search or ask users for Security/Field parameters.
+
+6. Preserve all existing BDP, BDH, BDIT, BDIB, and BQL behavior and signatures.
+
+Implement the code and tests now, then report:
+- files changed
+- tests run and results
+- exact Search-triggering conditions
+- any remaining live Bloomberg verification needed
+```
