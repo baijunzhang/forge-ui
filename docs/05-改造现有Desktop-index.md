@@ -2052,3 +2052,56 @@ Every checkpoint must leave the application usable and releasable.
    "`writeFile()` exists, but nothing calls it"),并按主题分了小标题(如 "The older
    prototype"),不是一整块平铺的 bullets。这一点是模型输出内容风格问题,不是 UI 结构问
    题,记录仅供参考,不属于任何 checkpoint 的 UI 验收标准。
+
+## Checkpoint 2 补充规格:执行轨迹的两层折叠结构(自动收起为一行摘要)
+
+从 Codex 截图里看到一个 Checkpoint 2 原规格没写清楚的细节:折叠不止发生在单条工具调用上,
+还有一层更外层的"整个 turn 的执行轨迹"折叠——运行中展开、完成后自动收起成一行、点击可
+再展开。这条**不新增 checkpoint,只是把 Checkpoint 2 的验收标准写完整**,到达 Checkpoint 2
+时按下面这份指令一起做,不提前实现:
+
+指令(发给 AI):
+```text
+This is an addendum to Checkpoint 2 (Tool timeline v1) of the workbench redesign,
+not a new checkpoint and not authorization to skip the existing checkpoint
+sequence or verification discipline. Implement this only when you reach
+Checkpoint 2, following the same process: stop after implementing, run tests,
+provide screenshots, report files changed, wait for approval.
+
+Add a second, outer layer of collapsing on top of the per-tool-call collapsing
+already specified for Checkpoint 2:
+
+1. Each user turn that involves tool calls gets its own execution-trace
+   container, separate from the final answer text.
+
+2. While the turn is still running:
+   - the execution-trace container is expanded by default;
+   - narrative text and one-line tool-call summaries stream into it live, in
+     the order they occur;
+   - tool-call summaries stay one line each (name + short status), consistent
+     with the existing Checkpoint 2 spec — do not print full absolute file
+     paths inline; truncate or move them behind the existing expandable
+     input/output details.
+
+3. When the turn finishes (final answer text is ready to render):
+   - the execution-trace container automatically collapses into a single
+     summary line, e.g. "Worked for Ns" with an expand affordance (chevron);
+   - this collapse happens automatically, without the user needing to click
+     anything.
+
+4. The collapsed summary line remains clickable at any time afterward to
+   re-expand the full trace (narrative + tool-call summaries) exactly as it
+   appeared while running.
+
+5. The final answer text is NOT part of the collapsible execution-trace
+   container. It always renders below it, fully visible, regardless of
+   whether the trace above it is collapsed or expanded.
+
+Acceptance criteria:
+- collapsing/expanding the trace must not affect the final answer's
+  visibility or layout;
+- the underlying tool-call payloads and execution behavior are unchanged —
+  this is presentation-layer only, consistent with the rest of Checkpoint 2;
+- test with a real multi-step tool-calling turn (not a single-tool-call
+  trivial case) so the streaming-then-collapse behavior is actually exercised.
+```
