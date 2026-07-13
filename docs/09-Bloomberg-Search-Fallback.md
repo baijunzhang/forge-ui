@@ -1453,3 +1453,81 @@ The system must not call Search before the initial BDP, BDH, BDIT, BDIB, or BQL 
 
 Use the existing connector as the source of truth, make the smallest maintainable
 changes, and do not invent Bloomberg identifiers.
+
+---
+
+## 批准:实现约束(发给持有实际 Bloomberg 代码库的 AI)
+
+上面的规格已批准。下面这段是发给实际拿着 Bloomberg connector 代码库的 AI 的批准 + 实现约束
+指令,把上面的规格收紧到这个具体项目的架构上(复用现有同步 `BBGClient` session 和锁、懒加载
+两个查询服务、TTL 10 分钟、最大 resume 深度 2 等)。先实现 BDP/BDH/BDIB/BDIT,BQL 只保持向后
+兼容、不强行接入宽泛的 Search fallback。
+
+指令(发给 AI):
+```text
+Approved. Please implement the plan directly in the repository, with the following
+constraints:
+
+1. Preserve the existing public behavior and signatures of bdp, bdh, bdib, bdit, and bql.
+2. Use optimistic execution:
+   - Call the existing Bloomberg function first.
+   - Only trigger Search after a genuine resolvable Security or Field error.
+   - Never run Search as a preflight step.
+3. Reuse the existing synchronous BBGClient session and lock. Do not create a competing
+   Bloomberg session or a second independent nextEvent loop.
+4. Open //blp/instruments and //blp/apiflds lazily only when Search fallback is needed.
+5. Search fallback should apply only to:
+   - invalid or unknown security
+   - invalid or unknown field
+   - field not applicable to security
+6. Do not trigger Search for:
+   - entitlement or authorization errors
+   - timeout or connection errors
+   - service unavailable errors
+   - invalid dates
+   - request limits
+   - general BQL syntax errors
+7. For the first implementation, fully support BDP, BDH, BDIB, and BDIT. Keep BQL
+   backward compatible, but do not add broad BQL Search fallback unless invalid
+   identifiers can be extracted safely.
+8. Parse and preserve Bloomberg securityError and fieldExceptions as structured errors.
+   Do not depend only on matching exception strings.
+9. Use an in-memory TTL pending-request store appropriate for this desktop app:
+   - TTL: 10 minutes
+   - thread-safe
+   - maximum fallback/resume depth: 2
+10. Store the actual candidate values returned by Bloomberg and validate selections
+    against the stored candidate set before resuming.
+11. Never allow the LLM to invent or modify Bloomberg security identifiers or field
+    mnemonics.
+12. When resuming, replace only the unresolved Security or Field. Preserve all other
+    original arguments such as dates, intervals, overrides, and event types.
+13. Do not call BloombergHealth as a data preflight.
+14. Do not modify unrelated files or perform broad refactoring.
+15. Add structured logs without logging credentials or sensitive session information.
+16. Add mocked tests covering:
+    - successful fast path with no Search call
+    - invalid Security only
+    - invalid Field only
+    - invalid Security and Field
+    - field not applicable
+    - entitlement error with no Search
+    - timeout with no Search
+    - multiple Securities/Fields where only failed indexes are replaced
+    - candidate validation
+    - pending request expiry
+    - successful resume
+    - maximum retry depth
+17. Run the existing test suite plus the new tests.
+
+Please implement now. After implementation, provide:
+- files changed
+- concise explanation of the final flow
+- tests and commands run
+- test results
+- any assumptions about Bloomberg response schemas
+- any areas that still require testing against a live Bloomberg Terminal
+
+If the actual repository architecture conflicts materially with this plan, stop and
+explain the conflict before making a large architectural change.
+```
