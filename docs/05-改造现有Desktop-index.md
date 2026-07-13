@@ -2015,3 +2015,40 @@ Every checkpoint must leave the application usable and releasable.
    规格里的 "file-change/diff experience" 部分)一并考虑,是否要把 diff 面板的数据来源从
    "对话轮次回执"改成"独立查询 working tree 状态",但**不在当前 checkpoint 顺序里插入新步
    骤或提前实现**,只作为该 checkpoint 到达时的参考。
+
+## 参考截图比对二:同一个 "please walk me through this repo" 任务,Codex vs 现有 AI Markets Desktop
+
+用同一个真实 prompt(且 Codex 分析的正好就是这个 forge-ui 仓库本身,包括从 git log 读出
+"仓库最近已从原型实现转向另一个真实 desktop app 的设计文档"这类需要理解上下文才能得出的
+判断)在两边各跑一次,逐处记录 Codex 明显更"舒服简洁流畅"的具体来源。同样**只记录参考,
+不构成新的实现授权**,不改变 6 个 checkpoint 的顺序:
+
+1. **工具调用摘要是一行灰字,不是一张表**:Codex 把每次工具调用折叠成单行摘要(如
+   `Ran a command`、`Read files, ran a command`),不展示完整绝对路径,默认不占版面。现有
+   实现是三列表格(工具名 / 完整绝对路径 / 状态+耗时),视觉噪音明显更大。→ **Checkpoint 2
+   (工具调用时间线 v1)** 的"一行摘要"要求应参考这个粒度:摘要行不应该塞入完整文件系统路
+   径,长路径应截断或收进展开详情里。
+
+2. **叙事优先于工具调用**:Codex 是完整句子的分析性叙述,工具调用摘要只是穿插在叙述句子
+   之间的间隙;现有实现是"执行 → 结构化 bullets 报告"的模式,叙事与工具调用之间过渡更生
+   硬。→ 供 **Checkpoint 2/3** 参考的写法差异,不涉及布局改动。
+
+3. **行内可点击的代码/文件引用**:Codex 回复里 `app.js (line 231)`、`forge-ui.html (line 1)`
+   这类引用是可跳转链接;现有实现里类似的文件名只是代码格式纯文本,不可点击。→ 记录为工
+   具时间线相关 checkpoint 的一个具体可选项,不在 Checkpoint 1(纯布局)范围内。
+
+4. **常驻轻量状态面板,而非挂在对话回复下的卡片**:Codex 右侧一直显示一个精简的
+   Environment 面板(Changes +0/-0、Local、branch、Commit or push),不随对话轮次出现或消
+   失。这一点和上一条"参考截图比对一"里记录的第 2 点(diff 应独立反映 workspace 状态而非
+   对话回执)相互印证,不是新发现,合并作为同一条参考依据看待。
+
+5. **收尾有结构化的"交付物卡片"**:Codex 任务结束时给出一个文件列表卡片(图标 + 类型标
+   签 + Open in 操作 + 时间戳 + 点赞/复制/分享),现有实现收尾只是一段 plain markdown 文
+   本。→ 供 **Checkpoint 5(空状态/审批卡片/错误状态统一)** 参考,可以在到达该 checkpoint
+   时评估是否需要为"任务完成、产出多个文件/文档"这类场景补一个结构化收尾卡片,但不在当前
+   插入新步骤。
+
+6. **诚实的自我审查语气 + 分主题小标题**:Codex 在叙述中直接指出被分析对象自身的问题(如
+   "`writeFile()` exists, but nothing calls it"),并按主题分了小标题(如 "The older
+   prototype"),不是一整块平铺的 bullets。这一点是模型输出内容风格问题,不是 UI 结构问
+   题,记录仅供参考,不属于任何 checkpoint 的 UI 验收标准。
