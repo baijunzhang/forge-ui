@@ -2003,3 +2003,107 @@ Implement the code and tests now, then report:
 - exact Search-triggering conditions
 - any remaining live Bloomberg verification needed
 ```
+
+## 新增能力:通用"发现型空结果"Fallback 框架 + 资产类别适配器架构(发给持有实际 Bloomberg 代码库的 AI)
+
+这是在已批准的 Search fallback 之上新增的一类触发原因,不是之前那些"结构化 Security/Field
+解析错误"的替代,而是补充第三种场景:用户用自然语言描述了一组特征(比如"某发行人的某类
+债券"),没有一个具体的 canonical Security 被解析出来,初始查询返回空结果——这种"空"跟
+"已经解析出具体 Security、但这个 Security 本身没有观测值/是 N/A/赶上周末假日"是两回事,
+后者依然不该触发 Search(前面几条指令已经反复强调这条边界),但前者(尚未定位到任何具体
+证券、结果为空是因为"发现"这一步就没找到东西)应该走 Search。新触发原因命名为
+`discovery_universe_empty`。
+
+架构上要求做成通用框架而不是"只为债券写死"的特例:通用 resolver 负责 fallback 分类、
+调 Search、pending request 存储、候选校验、resume、保留原始请求和可视化意图这些跟资产类别
+无关的部分;每个资产类别的 adapter(Equity / Bond / Rates-Index / FX / Options-Volatility)
+只负责 Search query 怎么构造、候选怎么丰富/排序/过滤、给用户看的简洁 metadata 长什么样。
+明确要求:不需要为每个资产类别现在就写全,只需要实现通用接口 + 完整实现 Bond adapter(当前
+实际用例),其余 adapter 允许后续再补,不改动通用 fallback gateway。
+
+指令(发给 AI):
+```text
+Please implement the empty-discovery fallback as a general framework, not as a
+bond-only special case.
+
+Add a generic fallback reason:
+
+discovery_universe_empty
+
+It should apply when:
+
+1. The user described a security or set of securities using natural-language
+   attributes.
+2. No canonical Bloomberg Security was successfully resolved.
+3. The initially selected Bloomberg query returned no securities or rows.
+4. The request contains useful constraints from which a Search query can be
+   constructed.
+5. The empty result is from security discovery, not from a resolved security
+   having no market observations.
+
+Create an asset-class-aware resolver architecture:
+
+- Generic candidate resolver
+- Equity candidate adapter
+- Bond candidate adapter
+- Rates/index candidate adapter
+- FX candidate adapter
+- Options/volatility candidate adapter
+
+Do not build full implementations for every asset class if the current codebase
+does not need them yet. Implement the generic interface and fully implement the
+Bond adapter for the current use case, while allowing other adapters to be
+added without changing the fallback gateway.
+
+The common resolver should handle:
+
+- fallback classification
+- Search invocation
+- pending request storage
+- candidate validation
+- resume
+- preservation of the original request and visualization intent
+
+The asset-class adapter should handle only:
+
+- Search-query construction
+- candidate enrichment
+- candidate ranking/filtering
+- concise user-facing metadata
+
+For bonds, enrich candidates with available:
+
+- issuer
+- coupon
+- maturity
+- currency
+- seniority
+- callable status
+- canonical Bloomberg Security
+
+For equities, use available:
+
+- company
+- exchange
+- country
+- currency
+- canonical Bloomberg Security
+
+For rates/index products, distinguish where possible:
+
+- cash security
+- benchmark index
+- futures contract
+- tenor
+
+Do not trigger discovery fallback for an already resolved canonical Security
+that simply has no observations, an N/A value, a weekend/holiday, or no trades.
+
+Add tests proving that:
+
+- a fuzzy bond discovery request returning empty triggers the generic
+  discovery_universe_empty path and Bond adapter
+- a fuzzy equity discovery request can use the same generic path
+- a resolved Security with empty data does not trigger Search
+- adapters do not duplicate pending-request or resume logic
+```
