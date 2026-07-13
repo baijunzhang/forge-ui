@@ -1924,3 +1924,25 @@ Please inspect the current implementation and make only the smallest changes
 needed to enforce this behavior. Add tests for empty-data cases to ensure that
 legitimate empty or N/A results do not incorrectly trigger Search.
 ```
+
+### 真机进展:AI Markets Desktop 已进入 Plan Mode 并给出检查结论(真机截图确认,尚未看具体 diff)
+
+- 这是在实际持有 Bloomberg 代码库的 AI Markets Desktop app 里(不是本追踪仓库)看到的真机
+  截图,对应上面"收紧为严格先执行、后 Search 模型"那条指令的执行进展。
+- **关键发现,跟本文档的判断一致**:现有后端架构已经基本对了——`BloombergExecutionGateway`
+  已经是"先执行选中的 Bloomberg 函数,只有报错后才跑 fallback 逻辑"的模式,不需要推倒重来。
+  它总结的主要修改点:①收紧 classifier 的判断行为;②把指令文本改成让模型不再做"语义预判"
+  (呼应上一条指令第 15 点的收紧);③加空结果/N/A 不误触发 Search 的测试。跟前面已批准的
+  方案方向一致。
+- **额外确认了一条相关但不完全同一件事的规则**(Bloomberg 数据请求的调用顺序,不是 Search
+  fallback 本身):
+  - 先调用 `BloombergInstructions`;
+  - **不要**把 `BloombergHealth` 当作数据请求的 preflight 检查来调用;
+  - 需要数据时再调用对应的 Bloomberg 数据端点;
+  - 只有用户明确要求检查连通性时才调用 `BloombergHealth`。
+  这跟之前 docs/07 里"不要把 BloombergHealth 当数据 preflight"的原则(见 P13 那条实现约束
+  第 13 点)是同一条规则在真机里被再次确认执行,不是新规则。
+- **尚未审查的部分**:截图显示 `default.md` 这个文件被改动了 +102 / −79 行,但截图没有展开
+  具体 diff 内容,所以这条改动本身是否符合上面存档的所有规则(尤其是刚推翻的语义预判那条)
+  还没有核实,只是记录"它确实在往这个方向推进",不代表已验收。下次如果能拿到 `default.md`
+  的具体 diff 内容,应该核对它是否已经把"语义预判"相关的措辞从指令文本里删掉了。
