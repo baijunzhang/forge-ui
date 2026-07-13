@@ -1798,3 +1798,129 @@ When translating a user's natural-language request into Bloomberg arguments:
 10. Preserve the user's original dates, periodicity, overrides, comparison
     intent, and visualization request.
 ```
+
+## 收紧为严格"先执行、后 Search"模型,推翻上一条的语义歧义预判(发给持有实际 Bloomberg 代码库的 AI)
+
+⚠️ **与上一条("自然语言解析规则:语义歧义预判 + 事后错误兜底")直接冲突**:这条明确要求
+第 15 点"Do not add a semantic-ambiguity pre-search step"——不允许执行前的语义歧义预判,
+Search 的唯一触发路径必须是"先执行、失败后再看错误类型",回到最初 P0 spec 的严格版本。
+两条指令都已存档在本文档里,如果要交给实现方,请自行决定采用哪一版(或者明确告知"以这条
+为准,忽略上一条"),避免实现方看到文档里两条互相矛盾的规则不知道听哪个。
+
+除了这条覆盖关系,这次新增的实质内容还有:①明确要求把整个 Bloomberg/Search 内部流程对
+用户完全隐藏(除非显式开启 debug 模式),给了具体的用户可见文案范例("I couldn't identify
+the exact HSBC security. Please choose one: ...");②明确"空结果/N/A 本身不能单独作为触发
+Search 的证据",除非连接器能确认空结果确实是因为标识符无法解析导致的——这是为了防止"周末
+没交易、字段合法但确实是 N/A"这类正常空数据被误判成需要 Search。
+
+指令(发给 AI):
+```text
+Please adjust the Bloomberg agent workflow to use a strict execution-first
+Search fallback model.
+
+The user should interact only through natural-language requests, for example:
+
+"Please give me AAPL stock price for the past month."
+
+The user should not need to provide or understand Bloomberg Security identifiers,
+Field mnemonics, or function names.
+
+Required internal workflow:
+
+1. Parse the natural-language request into:
+   - Bloomberg function: BDP / BDH / BDIT / BDIB / BQL
+   - Security
+   - Field
+   - dates and other required arguments
+
+2. Call the selected existing Bloomberg function immediately.
+
+3. If the call succeeds and returns usable data:
+   - return the data
+   - continue to the existing visualization workflow
+   - do not call Search
+   - do not mention Search or Bloomberg resolution to the user
+
+4. If the call fails:
+   - inspect structured Bloomberg errors
+   - trigger Search only when the error indicates that a Security or Field
+     cannot be resolved, or that the Field is not applicable to the Security
+
+5. Search-triggering cases include:
+   - securityError
+   - BAD_SEC
+   - UNKNOWN_SECURITY
+   - INVALID_SECURITY
+   - fieldExceptions
+   - BAD_FLD
+   - UNKNOWN_FIELD
+   - INVALID_FIELD
+   - field not applicable to Security
+
+6. Do not trigger Search for:
+   - entitlement or authorization errors
+   - timeout or connection errors
+   - service unavailable errors
+   - invalid dates or time ranges
+   - request limits
+   - general BQL syntax errors
+   - weekends or holidays
+   - no trading activity
+   - a valid Field whose value is genuinely N/A
+   - a valid Security with no observations in the requested period
+
+7. Do not use `no value`, an empty list, or null alone as sufficient evidence to
+   trigger Search. Search should require identifier-resolution evidence from the
+   Bloomberg response, unless the connector can reliably prove that the empty
+   result was caused by an unresolved identifier.
+
+8. If only the Security failed:
+   - run Security Search only
+
+9. If only the Field failed:
+   - run Field Search only
+
+10. If both failed:
+    - run both searches
+
+11. When Search returns candidates:
+    - return a concise `selection_required` response
+    - show only the information needed for selection
+    - do not explain the internal workflow to the user
+    - do not automatically select a candidate
+
+Example user-facing response:
+
+"I couldn't identify the exact HSBC security. Please choose one:
+
+1. 5 HK Equity — HSBC Holdings, Hong Kong listing
+2. HSBA LN Equity — HSBC Holdings, London listing
+3. HSBC US Equity — HSBC Holdings ADR, US listing"
+
+12. Preserve the original request internally, including:
+    - Bloomberg function
+    - dates
+    - periodicity
+    - interval
+    - event type
+    - overrides
+    - comparison and visualization intent
+
+13. After the user selects a candidate:
+    - call BloombergResume
+    - replace only the unresolved identifier
+    - preserve all other original arguments
+    - execute the original Bloomberg request
+    - continue automatically to visualization
+
+14. Keep all internal tool and error details hidden from the user unless debug
+    mode is explicitly enabled.
+
+15. Do not add a semantic-ambiguity pre-search step. The default path must always
+    be:
+    execute first → Search only after a resolvable Bloomberg error.
+
+Please inspect the current implementation and make only the smallest changes
+needed to enforce this behavior. Add tests for empty-data cases to ensure that
+legitimate empty or N/A results do not incorrectly trigger Search.
+```
