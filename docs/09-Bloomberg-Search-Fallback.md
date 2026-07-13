@@ -1707,3 +1707,34 @@ Also provide one complete example conversation:
 - BloombergResume is called
 - successful result is returned for visualization
 ```
+
+## 真机拼写错误用例:Security 拼写错误 / Field 拼写错误(发给持有实际 Bloomberg 代码库的 AI)
+
+两个针对性的真机测试用例,专门验证"LLM 不许自作主张纠正拼写错误"这条硬约束——故意把
+`AAPL US Equity` 打错成 `AAPL US Equit`、把 `PX_LAST` 打错成 `PX_LSAT`,要求原样传给 BDP,
+不许在调用前被模型悄悄"修正"掉,只能等 BDP 真的因为无法解析而报错后,才走已实现的 Search
+fallback 去找真实候选。
+
+指令(发给 AI,共两条,分别测试):
+
+```text
+Call Bloomberg BDP with the exact raw arguments below.
+
+Security: AAPL US Equit
+Field: PX_LAST
+
+Do not correct, normalize, infer, or replace the Security before calling BDP.
+Pass the Security string exactly as written.
+If BDP fails with a Security resolution error, use the implemented Search fallback.
+```
+
+```text
+Call Bloomberg BDP with the exact raw arguments below.
+
+Security: AAPL US Equity
+Field: PX_LSAT
+
+Do not correct, normalize, infer, or replace the Field before calling BDP.
+Pass the Field string exactly as written.
+If BDP fails with a Field resolution error, use the implemented Search fallback.
+```
