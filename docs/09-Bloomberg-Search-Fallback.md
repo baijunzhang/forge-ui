@@ -2920,3 +2920,113 @@ available in this environment, then report whether:
 After the investigation, report the smallest proven BQL template that returns
 real HSBC bond candidates.
 ```
+
+## 收缩范围:暂停 bond discovery,把 HSBC 债券这个案例踢出本阶段验收标准,回到最初的 identifier-resolution MVP(发给持有实际 Bloomberg 代码库的 AI)
+
+⚠️ **明确暂停整条 discovery 相关工作线**:这几轮为了打通"HSBC USD bonds maturing around
+2030"这一个具体案例,一路从架构讨论收窄到逐字段调 BQL 语法,投入已经明显超出了它在整体
+MVP 里的权重——structured security discovery 本身不是当前 MVP,不该继续卡住"通用 Search
+fallback 能不能先跑通"这件更基础的事。这条要求**这一阶段不再做任何 bond discovery、BQL
+universe、asset-class 专属、或结构化 discovery 相关的改动**,已经写的实验性 discovery
+代码不要求删除,但也不能再往前推,更不能拿它当验收标准。
+
+范围收回到最初、也是最核心的那条闭环:自然语言 → 先执行 BDP/BDH/BDIT/BDIB/BQL → 成功直接
+返回数据可视化,不碰 Search → 失败且是结构化的 Security 解析错误就走 Security Search →
+失败且是 Field 解析错误或 field-not-applicable 就走 Field Search → 两者都错就都查 → 用户
+选完之后校验候选、只替换未解析的那个标识符、其它参数原样保留、resume、可视化 → 合法空
+数据/周末假日/无成交/合法 N/A/权限问题/超时/连接失败/日期无效/通用 BQL 语法错误一律不触发
+Search。这些边界之前已经反复确认过很多次,这条只是要求**先把这条最基础的闭环端到端跑通并
+验证**,不再节外生枝。
+
+指令(发给 AI):
+```text
+We have over-focused on the specific example of discovering HSBC USD bonds
+maturing around 2030.
+
+That structured security-discovery use case is not the current MVP and should
+not block completion of the general Bloomberg Search fallback.
+
+Do not make any more bond-discovery, BQL-universe, asset-class-specific, or
+structured-discovery changes in this phase.
+
+The current scope is only the general execution-first identifier-resolution
+workflow:
+
+1. The user submits a natural-language financial-data request.
+
+2. The agent internally determines:
+   - BDP / BDH / BDIT / BDIB / BQL
+   - Security
+   - Field
+   - dates and other arguments
+
+3. The agent calls the existing Bloomberg data function first.
+
+4. If the request succeeds:
+   - return the data
+   - continue to visualization
+   - do not call Search
+
+5. If the Bloomberg response contains a structured Security resolution error:
+   - call the existing Security Search
+   - return concise Bloomberg candidates
+   - wait for the user's selection
+
+6. If the response contains a structured Field resolution error or a Field
+   not-applicable error:
+   - call the existing Field Search
+   - return concise Field candidates
+   - wait for the user's selection
+
+7. If both Security and Field fail:
+   - run both relevant Searches
+
+8. After the user selects:
+   - validate the selection against stored candidates
+   - replace only the unresolved identifier
+   - preserve the original function, dates, periodicity, interval, event type,
+     overrides, and visualization intent
+   - resume the original request
+   - continue to visualization
+
+9. Do not trigger Search for:
+   - valid empty historical data
+   - weekends or holidays
+   - no trades
+   - valid null or N/A values
+   - entitlement failures
+   - timeouts or connectivity failures
+   - invalid dates
+   - generic BQL syntax errors
+
+10. Structured security discovery, such as:
+    "Find HSBC USD bonds maturing around 2030",
+    is explicitly out of scope for this phase.
+
+    Do not remove any existing experimental discovery code, but do not extend
+    it or use it as an acceptance criterion.
+
+Please now assess only whether the general workflow above works end-to-end.
+
+Run or add focused tests for:
+
+- successful fast path with no Search
+- invalid Security → Security Search
+- invalid Field → Field Search
+- both invalid → both Searches
+- Field not applicable → Field Search only
+- successful candidate selection and Resume
+- all original arguments preserved after Resume
+- valid empty/N/A data → no Search
+- entitlement and timeout errors → no Search
+
+Then report:
+
+- which parts of this general workflow currently work
+- which parts still fail
+- the smallest fixes required
+- test results
+
+Do not propose or implement structured security discovery, bond-universe BQL,
+asset-class adapters, or broad architecture changes.
+```
