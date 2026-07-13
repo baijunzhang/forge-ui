@@ -2311,3 +2311,156 @@ Do not refactor unrelated code.
 After implementing, report exactly why the agent previously issued five BQL
 calls and which instruction or control-flow change now prevents that loop.
 ```
+
+## 暂停继续改编排,先诊断 Search 能力本身是否真的能用(真机截图确认,控制流问题修好了但 Search 本身没验证过)
+
+- **最新真机测试结果**:上一条的控制流问题确实修好了——`BloombergBQL` 这次只调用了一次,
+  没有再重试。但整体结果依然没达到预期:发现结果为空后,fallback 报告"Security Search
+  返回零候选",于是又退回到问用户要 ticker/ISIN/CUSIP。也就是说,循环重试这个 bug 修好了,
+  但真正的问题浮出水面了——**Search 这个能力本身,到目前为止其实从没被真机验证过是否真的
+  能查到东西**,之前几轮全部在改"什么时候该不该触发 Search"这个编排逻辑,从没人确认过
+  Search 被触发之后,底层查询和解析是不是对的。
+- 这条明确要求**先停下来诊断,不要再改编排代码**:先搞清楚空 BQL 结果之后 Security Search
+  到底有没有被真的调用、用的是哪个 Bloomberg 服务/请求(`//blp/instruments`
+  `instrumentListRequest`?还是 BQL?还是别的机制)、传进去的具体 query 和 filter 是什么、
+  Bloomberg 原始返回是什么、是真的零结果、解析报错,还是返回了东西但被现有 parser 丢弃了。
+- 诊断之后要求把 Search 重新设计成两种明确区分的模式,而不是含混地共用一套:**A. Identifier
+  lookup**(名字/ticker/标识符解析不出来,比如"HSBC"、拼错的"AAPL US Equit"、无效 Field)
+  和 **B. Security discovery**(用户用一组约束描述一批证券,比如发行人=HSBC、资产类别=
+  公司债、币种=USD、到期日大约 2030)。给了一个具体的最小接口签名
+  `search_security(query, mode, asset_class, issuer, currency, maturity_start,
+  maturity_end, max_results)`。明确要求 discovery 模式要用结构化的 Bloomberg/BQL 过滤条件
+  去查,**不能直接把历史价格查询本身当成 discovery 查询去用**——这可能正是 HSBC 债券例子
+  一直查不到东西的根因之一。再次重申不要加 asset-class adapter 层或宽泛的 resolver 架构
+  (呼应之前已经撤回过一次的那条)。
+- 要求在重新接回 fallback 主流程之前,先独立跑 4 个 Search 自测(AAPL lookup、HSBC lookup、
+  "last price" field lookup、HSBC USD corporate bond 2029-2031 discovery),确认 Search
+  本身真的能返回候选,再考虑要不要改动现有的 execution-first gateway。诊断阶段明确禁止再
+  问用户 ticker/ISIN/CUSIP。
+
+指令(发给 AI):
+```text
+We need to pause further fallback/orchestration changes and re-plan around the
+actual Search capability.
+
+The latest live test still did not achieve the intended outcome:
+
+User:
+"Please show me the price performance of HSBC USD bonds maturing around 2030
+over the past month."
+
+Observed:
+- BloombergBQL was called once.
+- The discovery result was empty.
+- The fallback reported that Security Search returned no candidates.
+- The user was asked to provide a ticker, ISIN, or CUSIP.
+
+The control-flow loop has been reduced, but the core Search capability has not
+been proven to work.
+
+Do not modify code yet.
+
+First inspect and report:
+
+1. After the empty BQL result, was the existing Security Search actually called?
+2. Which Bloomberg service/request was used?
+3. What exact query and filters were passed?
+4. What was the raw Bloomberg Search response?
+5. Did Bloomberg return zero results, a parsing error, or results that the
+   current parser discarded?
+6. Was Search using:
+   - //blp/instruments instrumentListRequest
+   - BQL
+   - or another mechanism?
+
+Then revise the design around two narrowly defined Search modes:
+
+A. Identifier lookup
+Use when a name, ticker, or identifier cannot be resolved, for example:
+- "HSBC"
+- "AAPL US Equit"
+- an invalid Bloomberg Field
+
+B. Security discovery
+Use when the user describes a set of securities using constraints, for example:
+- issuer = HSBC
+- asset class = corporate bond
+- currency = USD
+- maturity approximately 2030
+
+Do not add asset-class adapter layers or a broad resolver architecture.
+
+The Search tool may have a minimal interface such as:
+
+search_security(
+    query: str,
+    mode: "lookup" | "discovery",
+    asset_class: str | None = None,
+    issuer: str | None = None,
+    currency: str | None = None,
+    maturity_start: str | None = None,
+    maturity_end: str | None = None,
+    max_results: int = 10
+)
+
+For lookup mode:
+- reuse Bloomberg instrument lookup
+- return canonical Bloomberg securities and descriptions
+
+For discovery mode:
+- use structured Bloomberg/BQL filtering to return actual securities
+- do not use the historical-price query itself as the discovery query
+- return canonical identifiers plus useful metadata
+
+For the HSBC example, the discovery request should be structurally equivalent to:
+
+asset_class = corporate bond
+issuer = HSBC
+currency = USD
+maturity_start = 2029-01-01
+maturity_end = 2031-12-31
+
+It should return a list of securities with available:
+- canonical Bloomberg identifier
+- name/description
+- coupon
+- maturity
+- currency
+
+Before reconnecting this to the fallback workflow, run live Search tests
+independently:
+
+Test 1:
+Lookup query = "AAPL"
+Expected: at least one equity candidate.
+
+Test 2:
+Lookup query = "HSBC"
+Expected: multiple relevant HSBC candidates.
+
+Test 3:
+Field query = "last price"
+Expected: relevant Bloomberg Field candidates.
+
+Test 4:
+Discovery:
+issuer = HSBC
+asset class = corporate bond
+currency = USD
+maturity between 2029 and 2031
+Expected: matching bond candidates, or a clear raw Bloomberg explanation for
+why none are returned.
+
+Do not change the existing execution-first gateway until these standalone Search
+tests work.
+
+After investigation, report:
+- why the current Search returned no candidates
+- whether the problem is query construction, Bloomberg service limitations, or
+  response parsing
+- the smallest files/functions that need to change
+- the proposed live validation steps
+
+Do not ask the end user for ticker, ISIN, or CUSIP while Search capability is
+still being diagnosed.
+```
