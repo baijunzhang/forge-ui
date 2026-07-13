@@ -1738,3 +1738,63 @@ Do not correct, normalize, infer, or replace the Field before calling BDP.
 Pass the Field string exactly as written.
 If BDP fails with a Field resolution error, use the implemented Search fallback.
 ```
+
+## 自然语言解析规则:语义歧义预判 + 事后错误兜底,两条路径都能触发 Search(发给持有实际 Bloomberg 代码库的 AI)
+
+之前的实现只在 Bloomberg 请求真正失败(报错)之后才触发 Search。这条补充规则扩展了触发时机:
+除了"执行后报错触发"这条已有路径,再加一条"执行前语义判断触发"——比如用户说的公司有多个
+主要上市地、债券没指定到期/票息/币种、泛指的基准名称可能对应指数/现券/期货、字段有多种材质
+上不同的定义、期权/波动率请求缺少 tenor/delta/strike 等关键要素——这些情况即使 Bloomberg
+函数本身"能跑",也不该让模型悄悄挑一个解释就执行,而是要主动走 Search 让用户选。核心边界仍
+是"清晰、高置信度的请求走原来的快路径,不是每个请求都要 Search",只是把"该不该 Search"的
+判断点从"只能等报错"扩展成了"执行前+执行后都能判断"。
+
+指令(发给 AI):
+```text
+When translating a user's natural-language request into Bloomberg arguments:
+
+1. Use the existing Bloomberg functions directly when the intended Security,
+   Field, and function are unambiguous.
+
+2. Do not ask users to provide Bloomberg Security identifiers or field
+   mnemonics. Users should be able to describe their data need naturally.
+
+3. You may resolve widely recognized, high-confidence requests directly.
+   Example:
+   "AAPL stock price for the past month"
+   → BDH
+   → AAPL US Equity
+   → PX_LAST
+
+4. Do not silently select among multiple materially different valid
+   interpretations.
+
+5. Treat the following as ambiguous and use Bloomberg Search:
+   - a company with multiple major listings and no market specified
+   - bonds without a unique maturity/coupon/currency/security
+   - generic benchmark names that may refer to an index, cash security, or
+     futures contract
+   - fields with multiple materially different definitions
+   - options or volatility requests without sufficient tenor/delta/strike
+   - any low-confidence Security or Field resolution
+
+6. Search can be triggered in two situations:
+   a. Semantic ambiguity is detected before execution.
+   b. The initial Bloomberg function fails with a resolvable Security or Field
+      error.
+
+7. Do not run Search for every request. Preserve the fast path for clear,
+   high-confidence requests.
+
+8. When Search returns multiple reasonable candidates:
+   - present canonical identifier and description
+   - explain the material difference
+   - wait for the user's selection
+   - never choose automatically
+
+9. After selection, call BloombergResume or execute the preserved original
+   request with only the unresolved identifier replaced.
+
+10. Preserve the user's original dates, periodicity, overrides, comparison
+    intent, and visualization request.
+```
