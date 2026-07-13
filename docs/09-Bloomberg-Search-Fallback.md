@@ -1531,3 +1531,179 @@ Please implement now. After implementation, provide:
 If the actual repository architecture conflicts materially with this plan, stop and
 explain the conflict before making a large architectural change.
 ```
+
+---
+
+## 验收前:最终回归测试 + 代码审查(发给持有实际 Bloomberg 代码库的 AI)
+
+实现完成后、正式验收前的把关指令——不止跑新增测试,要跑全量套件 + formatter/linter/
+type checker,并且专门核对并发安全(同一把锁要覆盖 sendRequest+nextEvent 整个生命周期)、
+"正常成功请求绝不该碰 //blp/instruments 或 //blp/apiflds"、BQL 语法错误和权限错误不能被
+误判成 Search 触发条件等一系列具体正确性点。只修复由本次改动引入的回归,不做无关重构。
+
+指令(发给 AI):
+```text
+Before I accept the implementation, please perform a final regression and code review.
+
+1. Run the full existing test suite, not only:
+   tests/test_bloomberg_search_fallback.py
+
+2. Run the repository's existing formatter, linter, and type checker if configured.
+
+3. Inspect all six changed files and specifically verify:
+   - no second Bloomberg Session is created
+   - the same BBGClient lock protects the full sendRequest + nextEvent lifecycle
+   - normal successful requests never call //blp/instruments or //blp/apiflds
+   - BQL syntax and entitlement errors cannot accidentally trigger Search
+   - original direct Python bdp/bdh/bdib/bdit/bql return behavior is preserved
+   - the registered agent tools receive JSON-serializable responses
+   - BloombergResume validates selections against stored Bloomberg candidates
+   - pending requests are deleted only after successful completion or expiry
+   - a failed resume can return selection_required again without exceeding max depth
+   - multiple securities and fields preserve their original indexes
+   - empty Bloomberg results are not incorrectly treated as successful valid data
+
+4. Show me any test failures and fix only regressions caused by this implementation.
+
+5. Report:
+   - the full test command
+   - total passed/failed/skipped
+   - lint/type-check results
+   - any unresolved concerns
+
+Do not perform unrelated refactoring.
+```
+
+## 真机 Bloomberg Terminal 冒烟测试(发给持有实际 Bloomberg 代码库的 AI)
+
+回归和代码审查通过后,再拿真实 Bloomberg Terminal 跑一轮受限的冒烟测试,覆盖:正常快速路径
+(A)、无效 Security(B)、无效 Field(C)、自然语言/模糊 Security 比如直接输入"HSBC"看能不能
+返回真实候选(D)、自然语言 Field 比如"last price"、明确要求不能硬编码 PX_LAST 而要用 API
+真实返回的候选(E)、resume 流程(F)、以及 BDH 场景下验证 resume 后日期/频率/overrides 等
+其它参数原样保留(G)。明确要求:除非真实 Bloomberg 响应证明假设的 schema 有错,否则不要改
+实现。
+
+指令(发给 AI):
+```text
+Please now run a limited live Bloomberg Terminal smoke test.
+
+Do not change the implementation unless a real Bloomberg response proves that
+the assumed schema is incorrect.
+
+Test cases:
+
+A. Valid fast path
+Function: BDP
+Security: AAPL US Equity
+Field: PX_LAST
+
+Expected:
+- success
+- no instrument search
+- no field search
+- no pending request
+
+B. Invalid Security
+Function: BDP
+Security: NOT_A_REAL_SECURITY_123 Equity
+Field: PX_LAST
+
+Expected:
+- initial BDP attempt first
+- Security Search fallback only
+- selection_required response
+- no Field Search
+
+C. Invalid Field
+Function: BDP
+Security: AAPL US Equity
+Field: NOT_A_REAL_FIELD_123
+
+Expected:
+- initial BDP attempt first
+- Field Search fallback only
+- no Security Search
+
+D. Natural-language ambiguous Security
+Function: BDP
+Security: HSBC
+Field: PX_LAST
+
+Expected:
+- direct BDP attempt first
+- if unresolved, return actual Bloomberg Security candidates
+
+E. Natural-language Field
+Function: BDP
+Security: AAPL US Equity
+Field: last price
+
+Expected:
+- direct BDP attempt first
+- if unresolved, return actual Bloomberg Field candidates such as the relevant
+  Bloomberg field returned by the API; do not hardcode PX_LAST
+
+F. Resume
+Choose one candidate returned by case D or E and call BloombergResume.
+
+Expected:
+- only the unresolved value is replaced
+- original function and other arguments remain unchanged
+- the request is re-executed successfully
+- pending request is removed after success
+
+G. Historical request preservation
+Function: BDH
+Use one intentionally unresolved Security while supplying a valid Field,
+start date, end date, periodicity, and overrides.
+
+After selection, verify that all dates, periodicity, and overrides are unchanged.
+
+For every case, report:
+- initial request
+- raw error category/subcategory
+- whether Search was called
+- candidate response shape
+- final normalized response
+- whether the behavior matched expectations
+
+Redact any sensitive Bloomberg or internal information.
+```
+
+## Agent 层交互核查:selection_required 状态下的用户对话流程(发给持有实际 Bloomberg 代码库的 AI)
+
+最后一步核查的是"人"这一层——当后端返回 `selection_required` 时,AI agent 是否真的会把候选
+清楚地列给用户(带 index、canonical Bloomberg 值、description)、让用户选而不是替用户猜、
+内部保留 request_id、把用户的选择转换成精确的 BloombergResume schema、严格使用 Bloomberg
+返回的 canonical 候选值、resume 后继续走完原请求、成功结果送入现有可视化流程。如果这一层
+现在还没接好,只做最小的 agent 层改动,不需要为此新建前端组件(除非现有 UI 架构本来就要求)。
+另外要求给一段完整的示例对话,从用户提交一个模糊的 BDP 请求、直接请求失败、展示候选、用户
+选择、调用 BloombergResume、到成功结果送去可视化,走完整个闭环。
+
+指令(发给 AI):
+```text
+Please inspect the agent-facing interaction for status="selection_required".
+
+Verify that the AI agent will:
+
+1. Present the Security and/or Field candidates clearly to the user.
+2. Include candidate index, canonical Bloomberg value, and description.
+3. Ask the user to select rather than guessing.
+4. Preserve the request_id internally.
+5. Convert the user's selection into the exact BloombergResume schema.
+6. Use the canonical candidate exactly as returned by Bloomberg.
+7. Continue the original request after resume.
+8. Pass successful results into the existing visualization flow.
+
+If this interaction is not currently implemented, add the smallest possible
+agent-layer change. Do not build a new frontend component unless the existing
+UI architecture requires one.
+
+Also provide one complete example conversation:
+- user submits ambiguous BDP request
+- direct request fails
+- candidates are shown
+- user selects
+- BloombergResume is called
+- successful result is returned for visualization
+```
