@@ -2824,3 +2824,99 @@ Requirements:
 Please implement the standalone Search changes and tests now, then report the
 live results.
 ```
+
+## 收窄到 BQL 语法本身:逐字段、逐 filter 增量调试 bond universe 查询,不碰任何架构(发给持有实际 Bloomberg 代码库的 AI)
+
+问题已经收敛到一个很具体的点:bond discovery 之前试过的 `bondsuniv('ACTIVE')` 直接解析
+报错,`bonds('HSBC')` 这种 issuer 字符串又返回空——都不对。这条不再讨论架构或接口,纯粹是
+一次性收窄成"BQL 语法本身该怎么写"的现场调试,参考 `polars-bloomberg` 里一个已知能跑通的
+模式(`get(name()) for(bonds('GTN US Equity'))`,从**已解析的股票 ticker** 出发去找它名下
+的债券,而不是从发行人名字字符串直接查)。要求极其克制:一次只测一个 HSBC 股票 ticker
+(`HSBA LN Equity` / `5 HK Equity` / `HSBC US Equity`)、先只用最小 universe 查询不加任何
+字段、字段和 filter(currency/maturity 上下限)都要一个一个加、任何一步报错就停下来报告
+具体是哪个字段/filter 出的错,而不是整句重写。明确禁止再碰 fallback/gateway/pending
+store/Resume/agent instructions/整体 Search 架构,也禁止在没跑出真实结果前做任何"猜测性"
+代码改动。
+
+指令(发给 AI):
+```text
+The bond-discovery problem is now isolated. Do not change the fallback,
+gateway, pending store, Resume flow, agent instructions, or overall Search
+architecture.
+
+Do one narrow live investigation of the bond BQL universe syntax.
+
+The current `bondsuniv('ACTIVE')` approach produced a parse error, while issuer
+strings such as `bonds('HSBC')` returned empty.
+
+The current polars-bloomberg implementation documents a working pattern for
+obtaining a bond universe from a resolved equity ticker:
+
+    get(name())
+    for(bonds('GTN US Equity'))
+
+Use that known pattern as the starting point.
+
+Run the following live tests one at a time:
+
+1. Minimal bond universe from each potential HSBC equity identifier:
+
+    get(name())
+    for(bonds('HSBA LN Equity'))
+
+    get(name())
+    for(bonds('5 HK Equity'))
+
+    get(name())
+    for(bonds('HSBC US Equity'))
+
+Do not add currency, maturity, pricing, or historical fields yet.
+
+2. Report for each ticker:
+   - exact BQL expression
+   - whether it parsed
+   - raw Bloomberg response
+   - number of returned securities
+   - sample canonical bond IDs and names
+
+3. If one ticker returns a bond universe, use only that ticker for the next
+tests.
+
+4. Add bond metadata fields incrementally:
+   - name
+   - maturity
+   - currency or the exact supported Bloomberg equivalent
+   - ISIN if supported
+
+Add one field at a time. If a field causes an error, stop and report the exact
+field and Bloomberg error rather than rewriting the entire query.
+
+5. After the universe and fields work, add filters incrementally:
+
+   A. currency = USD
+   B. maturity >= 2029-01-01
+   C. maturity <= 2031-12-31
+
+Add only one filter per test and show the raw response after every step.
+
+6. Do not use:
+   - bondsuniv('ACTIVE')
+   - a long natural-language phrase in instrumentListRequest
+   - `bonds('HSBC')`
+   - name().matches(...) until the base bond universe is proven
+
+7. Do not reconnect discovery to the fallback yet.
+
+8. If none of the three HSBC equity tickers produces a bond universe, inspect
+the existing polars-bloomberg working examples and the Bloomberg BQL schema
+available in this environment, then report whether:
+   - another HSBC parent equity identifier is required,
+   - an issuer/entity identifier is required,
+   - the user lacks entitlement,
+   - or `bonds()` is unsupported for these securities.
+
+9. Do not make speculative code changes. First produce the live test results.
+
+After the investigation, report the smallest proven BQL template that returns
+real HSBC bond candidates.
+```
