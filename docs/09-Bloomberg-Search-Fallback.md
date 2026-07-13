@@ -2107,3 +2107,52 @@ Add tests proving that:
 - a resolved Security with empty data does not trigger Search
 - adapters do not duplicate pending-request or resume logic
 ```
+
+## 收缩范围:撤回上一条的 resolver/adapter 架构,只加一个最小判断条件(发给持有实际 Bloomberg 代码库的 AI)
+
+⚠️ **收缩上一条("新增能力:通用发现型空结果 Fallback 框架 + 资产类别适配器架构")**:上一条
+提出的通用 resolver + Equity/Bond/Rates-Index/FX/Options adapter 架构被明确叫停——用户认可
+这套架构未来可能有用,但不是当前目标。当前目标依然只是最开始批准的那条窄流程(先执行→
+结构化 Security/Field 错误才 Search→展示候选→用户选→resume→可视化),只多加一种触发条件:
+`is_security_discovery == true` 且没有解析出任何 canonical Security 且初始 BQL 结果为空时,
+复用**已有的** Security Search,不新建 resolver 层、不新建 adapter、不新建 metadata 架构。
+明确要求先给出收缩后的方案,批准了再实现,不要直接动手写代码。
+
+指令(发给 AI):
+```text
+I understand that the proposed resolver/adapters architecture may support more
+asset classes in the future, but that is not the current objective.
+
+My current objective is only to complete the previously agreed workflow:
+
+natural-language request
+→ call the existing Bloomberg function first
+→ if successful, return data and visualize
+→ if there is a structured Security/Field resolution error, call Search
+→ if a security-discovery BQL request returns empty before any canonical
+  Security is resolved, call Security Search
+→ show concise candidates
+→ user selects
+→ resume the original request
+→ visualize
+
+Please do not introduce resolver layers, asset-class adapters, or a new metadata
+architecture at this stage.
+
+Revise the plan to the smallest implementation using the existing:
+- BloombergExecutionGateway
+- Search functions
+- pending request store
+- candidate validation
+- BloombergResume
+
+The only additional case should be:
+
+is_security_discovery == true
+AND no canonical Security has been resolved
+AND the initial BQL result is empty
+→ trigger existing Security Search using a concise query derived from the
+original request.
+
+Please show the revised narrow plan before implementing.
+```
