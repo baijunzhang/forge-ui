@@ -1848,3 +1848,147 @@ After implementation, report:
 Do not claim a feature is implemented unless it is connected and working.
 Do not perform unrelated backend or Bloomberg changes.
 ```
+
+## 收紧执行纪律:把上面的大规格拆成 checkpoint,每步真机验证再继续(跟 ChatGPT 讨论后采纳)
+
+上一条"三栏 workbench 重设计"授权了"直接实现、不用停下来等批准"——这条明确**撤回那个
+授权**。跟外部讨论后达成一致:这个项目从 docs/06 到 08 到 09 唯一被反复验证有效的做法是
+"每一小步单独 commit → 真机验证 → 再下一步",从来不是大段无监督实现;这次规格改动面
+(整体信息架构、单文件 `index.html`、QWebChannel 事件路由、streaming 状态、一堆已经跑通
+不能回归的功能)风险特征跟历史上失败率最高的尝试很像,不该破例。
+
+**内容不变,只改执行方式**——上面已经给出的详细视觉/交互规格(尺寸、颜色 token、组件行为)
+仍然是"该做成什么样"的唯一依据,这条只规定"按什么顺序做、每步做完停下来验证什么"。
+
+拆分成 6 个 checkpoint,顺序不能打乱,也不能因为后面某步"看起来很简单"就合并着做:
+
+- **Checkpoint 0 — 冻结现有行为基线**:视觉改动开始前,先截图记录空/运行中/完成/失败/
+  审批/diff审阅这几种状态;保存有代表性的真实 tool-call payload(**必须是真机触发的
+  真实事件**——真的跑一次 Bloomberg BDP 调用、真的编辑一次文件、真的跑一次定时任务、真的
+  触发一次权限审批,把对应的 event JSON 存下来,不能靠读代码猜 payload 长什么样,这正是
+  这个项目之前吃过亏的地方:曾经有权限/守卫层默默拦截了写入,AI 却报告"已完成",不核实
+  真实行为就没法信);记录 sessions/streaming/tools/approvals/file-changes 用到的
+  QWebChannel 事件;跑一遍现有的 smoke test。这是后面所有 checkpoint 的"已知良好基线"。
+- **Checkpoint 1 — 只动布局几何**:对话列限宽、文档式消息间距、侧栏/主区边界、composer
+  sticky 定位、基础响应式。不动工具调用渲染,不动 composer 控件行为,不动 session 路由。
+  验收:长回复更好读、diff 审阅依然正常、没有引入任何路由/渲染/composer 行为改动。
+- **Checkpoint 2 — 工具调用时间线 v1**:把原始日志换成结构化时间线(执行分组、工具名、
+  状态、耗时、一行摘要、已完成默认折叠、可展开查看输入/输出、原始 payload 收进"Technical
+  details"里)。底层 payload 和执行行为不变,只换展示层。这一步先不做审批/错误/重复调用
+  合并的状态处理。
+- **Checkpoint 3 — 工具时间线的状态处理**:加 queued/running/completed/failed/cancelled/
+  waiting-for-approval、streaming 更新、重复调用分组、重试/错误展示。这一步必须用真实的
+  Bloomberg、文件、命令、定时任务执行来测,不能只测 mock 数据。
+- **Checkpoint 4 — composer 重构**:等对话列和工具时间线都稳定之后才做。收起
+  folder/permissions/mode/connectors,加紧凑的底部控制行,加"+"渐进展开菜单,保留
+  send/stop/attachment/permission/connector 全部行为。
+- **Checkpoint 5 — 空状态/审批卡片/错误状态统一**:空状态、审批卡片、可操作的错误卡片、
+  连接/权限状态、少量动效和无障碍打磨。
+
+每个 checkpoint 完成后必须:①停止实现;②跑相关测试和 build;③提供截图;④报告改了哪些
+文件;⑤给一份真机 smoke-test 清单;⑥等明确批准才能开始下一个 checkpoint。即使后一个
+checkpoint 看起来很简单顺手,也不允许合并着一起做。不能改动后端契约或 QWebChannel 事件
+语义。每个 checkpoint 结束时,app 必须处于"可用、可发布"的状态,不能留下半成品。
+
+指令(发给 AI,替代上一条"直接实现"的授权):
+```text
+Do not implement all of Phase 1 in one pass.
+
+The detailed visual and interaction specification for this redesign was already
+provided in the earlier message in this same document (three-region layout, design
+tokens, tool-call timeline, composer redesign, file-change/diff experience, empty
+state, approval/error handling, keyboard/responsive/accessibility rules, component
+structure). That specification is still the source of truth for WHAT each checkpoint
+should look like and how it should behave. This instruction only governs the ORDER of
+work and the verification discipline — it supersedes the earlier authorization to
+implement directly without pausing for approval.
+
+Work through the following checkpoints in order. After each checkpoint:
+
+1. stop implementation;
+2. run the relevant tests and build;
+3. provide screenshots;
+4. report files changed;
+5. provide a short real-hardware smoke-test checklist;
+6. wait for explicit approval before beginning the next checkpoint.
+
+Checkpoint 0 — Freeze the behavioral contract
+Before making any visual changes:
+- Capture screenshots of empty, running, completed, failed, approval, and
+  diff-review states as they exist today.
+- Save representative tool-call payloads captured from REAL executions — trigger an
+  actual Bloomberg data call, an actual file edit, an actual scheduled-task run, and
+  an actual permission-approval prompt on real hardware, and save the resulting event
+  JSON. Do not infer payload shapes from reading code alone.
+- Document the QWebChannel events currently used for sessions, streaming, tool calls,
+  approvals, and file changes.
+- Run the current smoke tests.
+Report this baseline before touching any code.
+
+Checkpoint 1 — Layout geometry only
+Change only:
+- transcript max width;
+- document-style message spacing;
+- sidebar/main-area boundaries;
+- sticky composer positioning;
+- basic responsive behavior.
+
+Do not redesign tool calls or composer controls yet.
+
+Acceptance criteria:
+- no session-routing changes;
+- no tool-rendering changes;
+- no composer behavior changes;
+- long responses become easier to read;
+- diff review still works.
+
+Checkpoint 2 — Tool timeline v1
+Replace the raw tool log visually, but preserve the underlying payloads and
+execution behavior.
+
+Implement:
+- execution groups;
+- tool name;
+- status;
+- elapsed time;
+- one-line summary;
+- collapsed completed calls;
+- expandable input/output details;
+- raw payload available behind "Technical details."
+
+Do not yet redesign approvals, errors, or repeated-call summarization.
+
+Checkpoint 3 — Tool timeline state handling
+Add:
+- queued;
+- running;
+- completed;
+- failed;
+- cancelled;
+- waiting for approval;
+- streaming updates;
+- repeated-call grouping;
+- retry/error presentation.
+
+This must be tested with real Bloomberg, file, command, and scheduled-task
+executions — not mocked data.
+
+Checkpoint 4 — Composer restructure
+Only after the transcript and timeline are stable:
+- collapse folder, permissions, mode, and connectors;
+- add the compact bottom control row;
+- introduce the "+" progressive-disclosure menu;
+- preserve send, stop, attachment, permission, and connector behavior.
+
+Checkpoint 5 — Empty, approval, and error states
+Then unify:
+- empty state;
+- approval cards;
+- actionable error cards;
+- connection and permission states;
+- small animation and accessibility polish.
+
+Do not combine checkpoints, even when later work appears straightforward.
+Do not change backend contracts or QWebChannel event semantics.
+Every checkpoint must leave the application usable and releasable.
+```
