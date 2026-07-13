@@ -2105,3 +2105,34 @@ Acceptance criteria:
 - test with a real multi-step tool-calling turn (not a single-tool-call
   trivial case) so the streaming-then-collapse behavior is actually exercised.
 ```
+
+## 三张真机截图追加发现:三条新差异(跟已记录的比对不重复)
+
+又一轮 Codex 截图 vs 我们真机截图(dark 一张、light 一张)的比对。其中"changed-files 卡片
+重复出现"和"Review 面板像独立模式而非并列面板"这两点,跟前面"参考截图比对一"已经记录过的
+"diff 归属"和"挤压覆盖态"是同一件事,不重复记录。真正新增的三点:
+
+1. **原始系统日志被直接甩进对话记录里**:真机截图里能看到一行未经处理的纯文本
+   `System: Rolled back coding changes: deleted: ... restored: ...` 直接出现在聊天记录中,
+   跟正常对话内容混在一起,没有任何结构化处理。Codex 的对话记录里完全没有这种"裸日志"。
+   → 这属于 **Checkpoint 5(错误/状态统一)** 的范围,应作为该 checkpoint 到达时的一条具体
+   验收项:系统级操作记录(回滚、内部状态变更等)不应作为纯文本消息注入对话流,应至少做成
+   一个简洁的系统提示条(小字、不与用户/AI消息同等视觉权重),或收进可展开的技术详情里。
+
+2. **几乎所有东西都单独套一层边框+背景色的盒子**(pytest 输出、命令示例、changed-files
+   卡片各自成框),而 Codex 的对应内容大多直接铺在面板背景上、靠间距而不是边框做区分,代码
+   引用是行内文字链接而非独立卡片。→ 这是一条贯穿多个 checkpoint 的通用设计原则,不是某一
+   个 checkpoint 独有的验收项,建议在 **Checkpoint 1 起** 就作为一条通用约束记下:非必要
+   不加边框容器,优先用间距和排版层级做区分,边框留给真正需要独立分区的元素(如 diff 面板
+   本身)。
+
+3. **侧边栏静止状态下常驻较多元素**(STUDIO 连接块 / Feature Connections 计数 / Board
+   Collections 计数一直显示),对比 Codex 侧边栏顶部只有精简导航 + 按仓库分组的线程列表。
+   这一点此前在 docs/06 的 A10/A12 里已经写过详细的收纳方案(移入"+"菜单、Board
+   collections 整个删除等),但从这次真机截图看,**这部分改动似乎还没有落地**——不确定是
+   还没做,还是做的是另一个尚未合并的分支。→ 不属于这次 workbench 重设计新范围,建议在
+   到达 **Checkpoint 4(composer 重构)** 或更早前,先让实现方确认 A10/A12 当前的真实完成
+   状态,避免重复交代已经交代过的需求。
+
+这三条同样**不构成新的实现授权,不改变 6 个 checkpoint 的顺序**,到达对应 checkpoint 时
+一并核对。
