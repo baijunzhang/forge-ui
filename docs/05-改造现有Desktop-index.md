@@ -1992,3 +1992,26 @@ Do not combine checkpoints, even when later work appears straightforward.
 Do not change backend contracts or QWebChannel event semantics.
 Every checkpoint must leave the application usable and releasable.
 ```
+
+## 参考截图比对:Codex 展开态 vs 现有 AI Markets Desktop 展开态
+
+对着一张 Codex 截图(展开 uncommitted changes 之后的状态,不是常驻三栏——两边都是点开才展
+开)和两张现有 AI Markets Desktop 截图(dark/light 各一张,分别是"对话内折叠卡片"和"点开
+后的 Review changes 面板")做了逐处比对,记录两点差异,作为后续相关 checkpoint 的验收参考,
+**不构成新的实现授权**,不改变上面 6 个 checkpoint 的顺序和范围:
+
+1. **展开后的空间结构不同**:Codex 展开后是三栏并列——左侧 threads、中间 chat、右侧 diff
+   面板互不挤压,且 diff 面板自带一个更右侧的完整文件树列(不只是改动文件的扁平列表)。现
+   有 AI Markets Desktop 点开 "Review changes" 后是挤压覆盖式——中间 chat 被压窄,右侧面板
+   像抽屉/modal 一样占满剩余空间,且只有扁平的 "CHANGED FILES" 列表,没有完整项目文件树。
+   → 对应 **Checkpoint 1(布局几何)** 的验收标准里应补一条:三栏展开时中间对话列不应被压
+   窄到不可读,右侧 diff/changes 面板应是并列的第三栏而不是覆盖式抽屉。
+
+2. **diff 的归属不同**:Codex 的 "Uncommitted changes" 是工作区级别的持续状态,不挂在具体
+   某一条对话回复下面,顶部有独立的 Open/Commit 入口,反映的是当前 working tree 的真实状
+   态。现有 AI Markets Desktop 的 "N changed files" 卡片是挂在某一条聊天回复下面的回执
+   (inline card),是"这一轮做了什么"而不是独立反映仓库当前状态的面板。
+   → 这一点不属于 Checkpoint 1(纯布局),需要在后续涉及文件改动/diff 体验的 checkpoint(原
+   规格里的 "file-change/diff experience" 部分)一并考虑,是否要把 diff 面板的数据来源从
+   "对话轮次回执"改成"独立查询 working tree 状态",但**不在当前 checkpoint 顺序里插入新步
+   骤或提前实现**,只作为该 checkpoint 到达时的参考。
