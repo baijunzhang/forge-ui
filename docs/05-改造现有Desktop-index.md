@@ -1134,3 +1134,717 @@ Verify by clicking in the running app. Report what changed.
 - "找不到 commit/diff 的 bridge 方法,要不要我让后端加?" → 通常回答:**先报告需要加什么,我去确认**。
 - "现有 data-theme 是 dark-blue,要不要保留这个名字?" → 可以保留机制,只精修配色。
 - 邮箱报错 `win32com not available`(截图里有)→ 那是 Outlook 集成的环境问题,**和这次 UI 改造无关**,让它别动。
+
+---
+
+## 完整版:整体重设计成 Codex/Claude Code 风格的三栏 AI Workbench(一次性给完整规格,不再零敲碎打)
+
+前面几条都是针对具体 bug 或局部调整(去 commit、改主题名、两层文件审阅)的小补丁。这条不一样,
+是一份完整的、面向整个前端的重设计规格——把现在"聊天+工具日志"的基础界面,提升成专业级的
+AI coding/金融 agent workbench,信息架构定为经典三栏:左侧 session 侧栏 + 中间对话/工作区
+(限定可读宽度,约 880–1040px,不再让文字铺满整个显示器)+ 右侧可折叠的 workbench 面板
+(Files/Changes/Diff/Terminal/Output/Artifacts,只显示真正有功能连接的 tab)。
+
+**跟之前几条最大的不同:这次明确授权直接实现,不需要在 Plan Mode 里等批准**——除非改动会
+牵涉到后端 API 变更或框架迁移,那种情况才需要停下来问。其余情况(纯前端的样式、组件结构、
+交互行为)可以审计完代码库之后直接动手做。这跟本文档前面几条"先给方案、批准了再做"的节奏
+不一样,值得注意,免得下次看这份文档时以为所有条目都要走批准流程。
+
+规格覆盖的范围很全:设计令牌(颜色/间距/字体/圆角/阴影/动效时长)、侧栏信息层级、工具调用
+从"原始日志"改成结构化执行时间线(队列中/运行中/已完成/等待批准/失败/取消,状态要能一眼
+区分)、代码改动摘要 + diff viewer、终端输出组件、空状态精简、审批卡片、错误展示分类、
+流式反馈的动效克制(120–200ms,尊重 prefers-reduced-motion)、键盘快捷键、响应式断点、
+无障碍基本要求。明确要求分三个阶段做(Phase 1: 整体外壳/宽度/侧栏/composer/工具时间线/
+空状态/设计令牌 → Phase 2: 文件改动摘要/diff/终端/右侧面板 → Phase 3: 快捷键/响应式/
+无障碍/动效打磨),Phase 1 做完再开始 Phase 2,不允许为后面阶段先搭一堆没接上功能的占位组件。
+明确禁止改动 Bloomberg 行为、后端 API、工具 schema、认证、agent 逻辑、connector 行为或现有
+数据契约(除非极小的、绝对必要的前端兼容性调整),必须保留现有全部功能(sessions/pinned/
+scheduled/tool calls/connectors/coding mode/accept-all/features/boards/Bloomberg 工具/
+现有聊天记录/现有后端通信/现有路由和持久化)。
+
+指令(发给 AI):
+```text
+After a brief audit, implement the frontend changes directly. Do not remain in
+plan mode or wait for approval unless a backend API change or framework migration
+would be required.
+
+You are acting as a senior product designer, frontend architect, and staff-level
+frontend engineer.
+
+Your task is to redesign and implement the frontend of the existing
+AI Markets Desktop so it feels like a polished modern AI coding workbench,
+inspired by the interaction quality of products such as Codex and Claude Code.
+
+Do not copy any proprietary branding, logos, exact visual assets, or product
+identity. Reproduce the useful interaction patterns, information hierarchy,
+density, responsiveness, and workflow quality while preserving the AI Markets
+Desktop identity.
+
+## Primary objective
+
+Transform the current frontend from a basic chat-and-tool-log interface into a
+professional AI coding and financial-agent workbench.
+
+The resulting application should feel:
+
+- calm
+- precise
+- fast
+- information-dense without feeling crowded
+- suitable for long technical sessions
+- easy to scan
+- trustworthy
+- optimized for tool execution, code edits, Bloomberg workflows, and review
+
+This is a frontend-focused task.
+
+Do not modify Bloomberg behavior, backend APIs, tool schemas, authentication,
+agent logic, connector behavior, or existing data contracts unless a tiny
+frontend compatibility adjustment is absolutely necessary.
+
+Preserve all existing features, including:
+
+- sessions
+- pinned sessions
+- scheduled items
+- tool calls
+- connectors
+- coding mode
+- accept-all behavior
+- features
+- boards
+- Bloomberg tools
+- existing chat history
+- existing backend communication
+- current routing and persistence
+
+## Current UI problems to address
+
+Based on the existing implementation, improve the following:
+
+1. The main content area is too wide and visually empty.
+2. The transcript lacks a strong readable content column.
+3. Tool calls appear like raw logs rather than a coherent execution timeline.
+4. The composer is visually weak and its actions are not clearly organized.
+5. The session sidebar has weak hierarchy, low information density, and unclear
+   active/hover states.
+6. Empty states consume too much space and provide little guidance.
+7. There is no strong workspace for:
+   - file changes
+   - code diffs
+   - terminal output
+   - artifacts
+   - generated visualizations
+8. Running, waiting-for-approval, failed, cancelled, and completed states are not
+   visually differentiated enough.
+9. Long agent responses and technical output are difficult to scan.
+10. The current UI does not feel sufficiently responsive or polished during
+    streaming and tool execution.
+
+## Important implementation constraints
+
+- Inspect the current repository before making changes.
+- Detect the actual framework, styling system, routing, component architecture,
+  and state management.
+- Adapt to the existing technology stack.
+- Do not migrate frameworks.
+- Do not perform unrelated refactoring.
+- Avoid adding heavy dependencies.
+- Reuse existing components where practical.
+- Preserve existing backend request and response formats.
+- Preserve all existing functionality.
+- Keep the application desktop-first but responsive at narrower widths.
+- Use semantic HTML and accessible interactions.
+- Do not use mock data in production paths.
+- Do not leave disconnected visual components.
+- Do not implement decorative controls that do nothing.
+
+After a short repository audit and implementation plan, implement directly.
+Do not pause for approval unless a destructive framework migration or backend
+contract change would be required.
+
+# Target information architecture
+
+Implement a three-region workbench layout:
+
+┌──────────────────┬──────────────────────────────┬───────────────────────┐
+│ Session sidebar  │ Main conversation/work area  │ Optional workbench    │
+│                  │                              │ panel                 │
+└──────────────────┴──────────────────────────────┴───────────────────────┘
+
+The right workbench panel should be optional and collapsible. The main area
+should expand naturally when the panel is closed.
+
+## 1. Left session sidebar
+
+Recommended desktop width:
+- approximately 240–280px
+- resizable or collapsible if compatible with the current architecture
+
+Include:
+
+- prominent New Session button
+- session search
+- Pinned section
+- Today / Recent section
+- Scheduled section where currently supported
+- compact session rows
+- clear selected state
+- hover actions
+- pin/unpin
+- rename where already supported
+- delete/archive where already supported
+- timestamps shown subtly
+- connection status near the bottom
+- workspace/account controls near the bottom
+
+Improve session row design:
+
+- single-line or two-line compact layout
+- title with ellipsis
+- optional short status indicator
+- subtle timestamp
+- contextual actions shown on hover
+- keyboard-accessible controls
+
+Do not use excessive cards or large vertical gaps.
+
+## 2. Main conversation area
+
+Create a centered readable transcript column.
+
+Recommended maximum content width:
+- approximately 880–1040px
+- fluid on narrower screens
+
+The transcript should support:
+
+- user messages
+- assistant messages
+- code blocks
+- tool-call groups
+- approvals
+- errors
+- generated tables
+- charts
+- file changes
+- expandable details
+
+Do not stretch message text across the full monitor width.
+
+Use clear vertical rhythm and visual grouping.
+
+Assistant responses should generally not be placed in oversized chat bubbles.
+Prefer a document/workbench style for assistant output, with subtle separation
+between turns.
+
+User messages may use a restrained surface or alignment treatment, but avoid
+large colorful bubbles.
+
+## 3. Optional right workbench panel
+
+Create a reusable collapsible panel for contextual work.
+
+Possible tabs:
+
+- Files
+- Changes
+- Diff
+- Terminal
+- Output
+- Artifacts
+- Visualizations
+
+Only show tabs that have real connected functionality.
+
+Recommended width:
+- approximately 360–500px
+- resizable if reasonable
+
+When a file or diff is opened, the panel should become the main review surface
+without disrupting the conversation transcript.
+
+# Visual design system
+
+Create or consolidate shared design tokens for:
+
+- colors
+- spacing
+- typography
+- borders
+- radii
+- shadows
+- animation durations
+- z-index layers
+
+Use a restrained neutral palette.
+
+Characteristics:
+
+- soft neutral background
+- clear but subtle surfaces
+- low-contrast dividers
+- high legibility
+- one restrained accent color
+- minimal shadows
+- border radii generally around 8–12px
+- avoid excessive pill shapes
+- avoid excessive gradients
+- avoid oversized empty areas
+- avoid decorative visual noise
+
+Typography:
+
+- use a clean system-oriented sans-serif stack for UI and prose
+- use a monospace stack only for code, commands, fields, tickers, and technical
+  identifiers
+- create a clear type hierarchy
+- body text should remain comfortable during long sessions
+- use compact labels for metadata and tool status
+
+Support both light and dark appearances if the existing application already has
+theme infrastructure. If not, structure tokens so dark mode can be added later
+without rewriting components.
+
+# Header and workspace context
+
+Use a compact top header rather than a large empty bar.
+
+Possible content:
+
+- current workspace or project
+- current session title
+- execution state
+- optional branch/project context
+- workbench toggle
+- connection state
+- compact utility actions
+
+Do not duplicate controls already clearly available elsewhere.
+
+# Composer redesign
+
+Make the composer a strong, persistent interaction surface.
+
+It should be:
+
+- sticky near the bottom of the main work area
+- visually distinct from the transcript
+- compact when empty
+- able to expand for multiline input
+- keyboard friendly
+
+Recommended structure:
+
+Top/context row, shown only when relevant:
+- attached files
+- selected context
+- connector chips
+- referenced tools
+- current file/project context
+
+Main input row:
+- multiline textarea
+- attachment control
+- slash-command or command control where supported
+- send button
+- stop-generation button while running
+
+Bottom control row:
+- permission mode such as accept-all
+- working mode such as Coding
+- connectors
+- features
+- boards
+- any existing environment selector
+
+Improve the hierarchy of these controls. They should look like intentional
+context controls rather than loose text at the bottom.
+
+Composer behavior:
+
+- Enter sends
+- Shift+Enter adds a new line
+- Escape may stop or close transient UI where appropriate
+- preserve drafts per session if supported
+- show clear disabled and loading states
+- show Stop while the agent is running
+- prevent accidental double submission
+
+# Tool-call experience
+
+Redesign tool calls as a structured execution timeline.
+
+Each tool call should display:
+
+- icon
+- human-readable tool name
+- current status
+- elapsed time
+- concise one-line summary
+- expandable request/response details
+
+Statuses should be visually distinct:
+
+- queued
+- running
+- completed
+- waiting for approval
+- failed
+- cancelled
+
+Default behavior:
+
+- completed low-level calls should usually be collapsed
+- currently running calls should remain visible
+- failed calls should expand or clearly surface the error
+- nested or sequential calls should be grouped under a parent execution group
+- repeated calls should not create excessive visual clutter
+
+Example:
+
+Use 5 tools                                      Completed · 13s
+├─ Bloomberg Instructions                       Completed
+├─ Bloomberg BQL                                Completed · 4.4s
+├─ Bloomberg Security Search                    Completed · 1.2s
+├─ Bloomberg Resume                             Completed
+└─ Visualization                                Completed
+
+Allow users to expand each row to inspect:
+
+- input
+- output
+- error
+- duration
+- metadata
+
+Do not expose raw JSON by default. Present a readable summary first, with raw
+details available in an expandable technical section.
+
+# Code and file-change experience
+
+Build reusable components for code-edit workflows.
+
+Required concepts:
+
+## File change summary
+
+Show:
+
+- number of changed files
+- additions
+- deletions
+- file names
+- status per file
+
+Example:
+
+3 changed files                           +136  −5
+tools/bloomberg.py
+tools/core.py
+tests/test_bloomberg_search_fallback.py
+
+## Diff viewer
+
+Support, where current data makes it possible:
+
+- unified diff
+- optional split diff
+- line numbers
+- syntax highlighting
+- added/removed line styling
+- file navigation
+- collapse unchanged sections
+- copy button
+- accept/reject per file where backend behavior exists
+- accept all where backend behavior exists
+
+Do not invent accept/reject functionality if it is not supported by the current
+backend. In that case, provide review-only UI.
+
+## Terminal and command output
+
+Present commands in a compact terminal-style component.
+
+Include:
+
+- command
+- running status
+- duration
+- exit status
+- stdout/stderr
+- copy button
+- collapse/expand
+
+Long output should be constrained and scrollable rather than making the entire
+conversation excessively tall.
+
+# Empty state
+
+Replace the oversized blank empty state with a useful but restrained starting
+experience.
+
+Include:
+
+- concise headline
+- one-line explanation
+- 3–5 context-relevant starter actions
+
+Examples:
+
+- Inspect this repository
+- Explain the current architecture
+- Fix a failing test
+- Review recent file changes
+- Run a Bloomberg data workflow
+
+Suggestions should appear as compact action rows or chips, not large marketing
+cards.
+
+The composer should remain the primary focus.
+
+# Approval and interruption states
+
+Create a clear approval component for actions that need user confirmation.
+
+It should show:
+
+- what action is proposed
+- affected files or systems
+- concise risk level if relevant
+- Approve
+- Reject
+- Review changes
+
+Do not bury approval requests inside long prose.
+
+For waiting states, use a clear compact banner or inline card rather than making
+the user search through the transcript.
+
+# Error handling
+
+Errors should be actionable and visually distinct without being alarming.
+
+Show:
+
+- concise error title
+- readable explanation
+- retry action when safe
+- inspect details
+- copy diagnostic information
+
+Separate:
+
+- tool error
+- connection error
+- permission error
+- validation error
+- user cancellation
+
+Do not show raw stack traces by default.
+
+# Streaming and execution feedback
+
+Improve the perception of speed.
+
+During execution:
+
+- immediately acknowledge the request
+- show the running tool group
+- stream assistant text without layout shifting
+- show elapsed duration
+- expose a Stop action
+- avoid full-page loading states
+- avoid blank screens during transitions
+
+Use subtle motion only:
+
+- 120–200ms UI transitions
+- restrained opacity/height animations
+- respect prefers-reduced-motion
+
+# Keyboard and productivity behavior
+
+Add or preserve practical shortcuts where compatible:
+
+- Ctrl/Cmd+K: session or command search
+- Ctrl/Cmd+N: new session
+- Ctrl/Cmd+Enter: send or run where appropriate
+- Escape: close overlays or stop current transient state
+- Ctrl/Cmd+B: toggle sidebar if safe
+- Ctrl/Cmd+Shift+B or another documented shortcut: toggle workbench panel
+
+Do not intercept browser-standard shortcuts unnecessarily.
+
+Provide visible tooltips for icon-only controls.
+
+# Responsive behavior
+
+Desktop is the primary target.
+
+At medium widths:
+
+- right workbench panel should collapse
+- sidebar may become narrower or collapsible
+- transcript should retain readable margins
+
+At narrow widths:
+
+- use a single main column
+- sidebar becomes a drawer
+- workbench becomes a full-screen overlay or tab
+- composer remains accessible
+
+# Accessibility
+
+Meet practical WCAG expectations:
+
+- sufficient text contrast
+- visible focus states
+- keyboard navigation
+- semantic buttons
+- ARIA labels for icon-only controls
+- status announcements for running/completed/failed tasks where reasonable
+- no information conveyed by color alone
+- minimum usable target sizes
+
+# Recommended component structure
+
+Adapt names to the current framework, but aim for components conceptually similar
+to:
+
+- AppShell
+- WorkspaceHeader
+- SessionSidebar
+- SessionSearch
+- SessionList
+- SessionRow
+- ConversationView
+- MessageTurn
+- AssistantResponse
+- UserMessage
+- ToolExecutionGroup
+- ToolExecutionRow
+- ToolDetails
+- ApprovalCard
+- ErrorCard
+- FileChangeSummary
+- DiffViewer
+- TerminalOutput
+- WorkbenchPanel
+- EmptyState
+- Composer
+- ContextChips
+- StatusIndicator
+
+Avoid one giant page component.
+
+Extract repeated styles and state behavior into reusable components.
+
+# Data and state rules
+
+Do not redesign backend contracts.
+
+Create frontend view models or adapters when raw backend responses are difficult
+to render.
+
+Examples:
+
+- normalize tool statuses for display
+- group sequential tool calls
+- convert raw file-change payloads into a display model
+- preserve the original backend payload for expandable technical details
+
+Do not mutate backend response objects in-place.
+
+# Implementation process
+
+1. Inspect the repository.
+2. Identify:
+   - entry point
+   - main app shell
+   - session sidebar implementation
+   - conversation renderer
+   - tool-call renderer
+   - composer
+   - CSS/theme system
+   - state management
+   - tests
+3. Summarize the current frontend architecture in a few paragraphs.
+4. Identify the smallest maintainable component and styling changes.
+5. Implement the redesign directly.
+6. Preserve existing behavior.
+7. Run the existing frontend test suite.
+8. Run linting and type checking.
+9. Build the frontend.
+10. Fix regressions caused by the changes.
+11. Provide before/after screenshots or browser captures if the environment
+    supports them.
+
+# Scope control
+
+Prioritize the following in this order:
+
+Phase 1:
+- app shell
+- content width
+- sidebar hierarchy
+- composer hierarchy
+- tool-call timeline
+- empty state
+- shared design tokens
+
+Phase 2:
+- file change summary
+- diff viewer improvements
+- terminal output
+- right workbench panel
+
+Phase 3:
+- keyboard shortcuts
+- responsive refinements
+- accessibility refinements
+- animation polish
+
+Complete Phase 1 fully before starting Phase 2.
+
+Do not create unfinished placeholder components for later phases.
+
+# Acceptance criteria
+
+The task is complete only when:
+
+1. Existing sessions still load.
+2. New sessions still work.
+3. Existing messages render correctly.
+4. Existing tool calls still execute.
+5. Existing Bloomberg tools are unaffected.
+6. Existing connector controls still work.
+7. The composer can send and stop requests correctly.
+8. Tool calls have clear running/completed/error states.
+9. Long tool details can be collapsed.
+10. The transcript has a readable maximum width.
+11. The sidebar has clear hierarchy and selected states.
+12. Empty state is useful and compact.
+13. File changes are easier to review.
+14. No backend contracts were broken.
+15. Frontend tests, type checking, linting, and build pass.
+16. No major console errors remain.
+17. The UI works at common desktop sizes and narrower layouts.
+
+# Final report
+
+After implementation, report:
+
+- frontend stack discovered
+- files changed
+- components created or refactored
+- important visual and interaction changes
+- tests/build commands run
+- test/build results
+- backend behavior deliberately left unchanged
+- remaining optional improvements
+
+Do not claim a feature is implemented unless it is connected and working.
+Do not perform unrelated backend or Bloomberg changes.
+```
