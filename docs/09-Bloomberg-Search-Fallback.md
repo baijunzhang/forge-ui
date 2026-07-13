@@ -2672,3 +2672,155 @@ First inspect the current code and report:
 
 Do not modify code until presenting this narrow plan.
 ```
+
+## 诊断结果确认:根因找到了,Lookup 和 Field Search 都是好的,Discovery 从未真正实现过(真机截图确认)
+
+- **根因定位清楚了**:之前 HSBC 债券那次 Search 查不到东西,不是因为 Bloomberg Search 这个
+  能力整体坏了,而是因为现有 fallback 把一整句自然语言("HSBC USD corporate bonds maturing
+  around 2030")原样传给了 `instrumentListRequest`——这个服务对"名字/ticker/标识符"这种
+  lookup 场景效果很好(AAPL、HSBC 单独查都没问题),但完全不适合"一组约束描述一批证券"这种
+  discovery 场景。BQL 层面的 discovery 查询构造本身也可能有问题(`bonds('HSBC')` 对这种
+  issuer 风格的查询返回了空 universe,可能是 `bonds()` 期待的 issuer 标识符/entity/ticker/
+  universe 语法跟传入的不一致)。报告明确排除了"parser 把有效结果丢弃了"和"Bloomberg 服务
+  中断"这两个不太可能的原因(因为简单 lookup 和 field search 当时都能正常工作)。
+- **结论**:Search 服务是"部分能用"——Lookup 模式能用、Field Search 能用,但 Discovery
+  模式实际上从来没有被真正实现/验证过。这澄清了之前几轮"Search 到底行不行"的疑问:不是
+  推倒重来,是把 discovery 单独实现出来。
+
+## 批准:只做独立 Search 验证,暂不接回 fallback,discovery 接口调整为通用而非债券专属(发给持有实际 Bloomberg 代码库的 AI)
+
+诊断结果被采纳,批准继续往下做,但明确限定范围:**这一阶段只做独立的 Search 验证,不接回
+`BloombergExecutionGateway`/pending request/Resume/execution-first 工作流**,等 discovery
+真的能可靠返回候选之后,再讨论怎么接回主流程。同时对上一条已经存档的接口做了一处调整:
+`search_security()` 用一个通用的 `mode: "lookup" | "discovery"` + `asset_class` +
+`constraints` 字典,不要在顶层单独为债券开 issuer/currency/maturity_start/maturity_end
+这些专属参数(呼应之前讨论过的"轻量分发、不做重架构"的方向,这次把接口本身也做得更通用)。
+第一阶段的实现范围:完整实现并真机测过 Bond discovery;Equity discovery 只要能可靠支持,
+实现或验证一个简单场景即可(HSBC 港股);其余资产类别明确留白,不硬造结果。要求对每个
+discovery 真机测试都报告:生成的具体 BQL 表达式、Bloomberg 原始响应形状、解析出的候选、
+以及任何 entitlement/universe/issuer 解析报错。
+
+指令(发给 AI):
+```text
+The revised diagnosis is correct: identifier lookup works, Field Search works,
+but structured security discovery has not yet been implemented or proven.
+
+Please proceed with the standalone Search work only. Do not reconnect it to the
+existing fallback workflow yet.
+
+One adjustment before implementation:
+
+Use a general discovery interface rather than bond-specific top-level
+parameters:
+
+search_security(
+    mode: "lookup" | "discovery",
+    query: str | None = None,
+    asset_class: str | None = None,
+    constraints: dict | None = None,
+    max_results: int = 10
+)
+
+Examples:
+
+Bond discovery:
+{
+  "mode": "discovery",
+  "asset_class": "bond",
+  "constraints": {
+    "issuer": "HSBC",
+    "currency": "USD",
+    "maturity_start": "2029-01-01",
+    "maturity_end": "2031-12-31"
+  }
+}
+
+Equity discovery:
+{
+  "mode": "discovery",
+  "asset_class": "equity",
+  "constraints": {
+    "company": "HSBC",
+    "market": "Hong Kong"
+  }
+}
+
+Requirements:
+
+1. Keep identifier lookup unchanged:
+   - use //blp/instruments and instrumentListRequest
+   - support queries such as AAPL, HSBC, and incomplete tickers
+
+2. Keep Field Search unchanged.
+
+3. Implement discovery as a distinct path.
+   Do not pass the full natural-language phrase to instrumentListRequest.
+
+4. Discovery must use structured Bloomberg/BQL filtering appropriate to the
+   requested asset class.
+
+5. For the first implementation:
+   - fully implement and live-test bond discovery
+   - implement or prove one simple equity discovery case if reliably supported
+   - leave unsupported asset classes explicit rather than inventing results
+
+6. Normalize candidates into:
+
+{
+  "security": "canonical Bloomberg identifier",
+  "name": "display name",
+  "description": "description",
+  "asset_class": "asset class",
+  "metadata": {}
+}
+
+7. For bond candidates, include where available:
+   - issuer
+   - coupon
+   - maturity
+   - currency
+   - ISIN
+
+8. For equity candidates, include where available:
+   - exchange
+   - market/country
+   - currency
+
+9. Run standalone live validation before touching the fallback:
+
+   A. lookup("AAPL")
+      Expected: Apple equity candidate(s)
+
+   B. lookup("HSBC")
+      Expected: multiple HSBC candidates
+
+   C. field search("last price")
+      Expected: relevant Bloomberg Field candidates
+
+   D. bond discovery:
+      issuer = HSBC
+      currency = USD
+      maturity between 2029 and 2031
+      Expected: matching bonds, or a precise raw Bloomberg error explaining why
+      the query cannot run
+
+   E. equity discovery:
+      company = HSBC
+      market = Hong Kong
+      Expected: Hong Kong-listed HSBC equity candidate
+
+10. For each discovery live test, report:
+    - exact BQL expression generated
+    - raw Bloomberg response shape
+    - parsed candidates
+    - any entitlement, universe, or issuer-resolution error
+
+11. Do not change BloombergExecutionGateway, pending requests, Resume, or the
+    execution-first workflow in this phase.
+
+12. Only after standalone discovery returns real candidates should you propose
+    the minimal change to reconnect it to the existing fallback.
+
+Please implement the standalone Search changes and tests now, then report the
+live results.
+```
