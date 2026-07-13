@@ -2156,3 +2156,54 @@ original request.
 
 Please show the revised narrow plan before implementing.
 ```
+
+## 批准实现:窄版 BQL 发现型空结果 fallback(发给持有实际 Bloomberg 代码库的 AI)
+
+对上一条收缩后的窄方案正式批准实现——不加 resolver 层、不加 adapter、不加新的 metadata
+架构,完全复用现有的 `BloombergExecutionGateway`、Security Search、pending request store、
+candidate validation、`BloombergResume`。新的触发条件收紧为三个同时成立才生效:①原始请求
+本身就是在尝试发现一个或多个证券;②没有解析出任何 canonical Bloomberg Security;③BQL
+discovery 结果为空。同时再次重申一遍已经反复确认过的边界:已解析出的 Security 没有观测值、
+周末/假日空数据、无成交、合法 N/A、已解析的 canonical BQL universe 返回空,这些都不触发
+Search。测试范围也收紧为只加三个针对性用例,不铺开测。
+
+指令(发给 AI):
+```text
+Approved. Please implement the revised narrow plan exactly as described.
+
+Important constraints:
+
+1. Do not add resolver layers, asset-class adapters, or a new metadata architecture.
+2. Reuse the existing BloombergExecutionGateway, Security Search, pending request store, candidate validation, and BloombergResume.
+3. Preserve the execution-first workflow:
+   natural-language request
+   → existing Bloomberg function first
+   → success: return data and visualize
+   → structured Security/Field error: existing Search fallback
+   → unresolved security-discovery BQL returns empty: Security Search
+   → user selects
+   → resume the original request
+   → visualize
+4. The new BQL-empty fallback must run only when:
+   - the original request was trying to discover one or more securities,
+   - no canonical Bloomberg Security was resolved,
+   - and the BQL discovery result is empty.
+5. Do not trigger Search for:
+   - a resolved Security with no observations,
+   - weekend or holiday empty data,
+   - no trades,
+   - valid N/A values,
+   - an already resolved canonical BQL universe returning empty.
+6. Preserve the original dates, fields, periodicity, overrides, and visualization intent after the user selects a candidate.
+7. Keep user-facing candidate messages concise and hide internal BQL expressions, request IDs, classifiers, and resume details.
+8. Add only focused tests for:
+   - unresolved discovery BQL empty → Security Search
+   - resolved canonical Security empty → no Search
+   - candidate selection → original request resumes with dates and visualization intent preserved
+
+Implement now, run the relevant tests, and report:
+- files changed
+- tests run and results
+- the exact new fallback condition
+- remaining live Bloomberg verification needed
+```
